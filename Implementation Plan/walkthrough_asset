@@ -1,0 +1,30 @@
+# Phase 3 Walkthrough: Asset Planning & Creation System
+
+I have completely implemented the **Asset Planning & Asset Creation System** as requested! This new pillar of your Financial OS allows you to proactively plan, score, and track your wealth-generating assets.
+
+> [!TIP]
+> The backend automatically restarts and applies schema changes. The new tables (`assets` and `asset_ideas`) have been created. 
+
+## What Was Completed
+
+### 1. The Asset Opportunity Vault
+Added a dedicated vault to brainstorm and store potential assets.
+- **Asset Scoring System:** A backend algorithm automatically grades each idea from 0 to 100 based on ROI potential, expected time commitment, priority, and risk level.
+- **Visuals:** Ideas are displayed as beautiful glass cards with color-coded score badges.
+
+### 2. The Asset Creation Tracker
+A pipeline to manage the lifecycle of an asset from planning to active income generation.
+- **Roadmap Integration:** Each asset has a direct link to the **Goals & Projects** Kanban board.
+- **Financial Tracking:** Quickly see Expected Value vs Actual Monthly Income. 
+
+### 3. The Asset Dashboard
+A command center specific to your Asset Portfolio.
+- Total Active Assets Value vs Future Portfolio Value.
+- Passive Income tracking (Target vs Actual).
+- Pipeline Health tracking.
+
+### 4. Kanban Enhancements
+- As requested, I built a custom **ResizableSplitPane** component and integrated it into your Goals & Projects Kanban Board. You can now dynamically drag the space between columns!
+
+## Next Steps
+You can try navigating to the new **Asset Planning** section in your left sidebar. Try adding an idea to the Opportunity Vault to see its Asset Score calculated automatically!

@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+!.env.example
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (tracked by git but contents ignored)
+backend/uploads/receipts/*
+backend/uploads/documents/*
+backend/uploads/dreams/*
+backend/uploads/images/*
+backend/uploads/attachments/*
+!backend/uploads/**/.gitkeep
+
+# Logs
+*.log

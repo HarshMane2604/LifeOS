@@ -1,0 +1,92 @@
+# Phase 3: Asset Planning & Creation System
+
+This plan outlines the architecture and implementation for the completely new **Asset Planning & Asset Creation System** module inside the Financial OS. The goal is to track, plan, and analyze the lifecycle of wealth-generating assets.
+
+## User Review Required
+
+> [!IMPORTANT]
+> Please review the architecture and answer the open questions below before I begin execution. 
+
+## Open Questions
+
+> [!WARNING]
+> **Asset Roadmap Integration:** You mentioned breaking down an Asset into Milestones -> Tasks -> Subtasks. We already built a `Project -> Milestone -> Task -> Subtask` system in Phase 2 for general goals. 
+> **Question:** Should we simply link an `Asset` to a `Project` (so the asset acts as the financial wrapper, and the Project handles the actual task roadmap), or should we build a completely separate task tracking system exclusively for Assets? (Recommendation: Link Asset to Project to reuse the Kanban board we just fixed!).
+>
+> **Question:** Should `AssetOpportunityVault` be a completely new table, or should we just add an `is_asset` flag to the existing `FinancialIdea` table? (Recommendation: New table `AssetIdea` to keep the specific scoring metrics cleanly separated).
+
+---
+
+## Proposed Architecture
+
+### 1. Database Models (`backend/app/models/assets.py`)
+
+**Model: `Asset`**
+- `id` (UUID)
+- `name` (String)
+- `category` (Enum: Financial, Business, Physical, Personal)
+- `description` (Text)
+- `status` (Enum: Idea, Research, Planning, In Progress, Under Development, Acquired, Active, Generating Income, Completed, Archived)
+- `target_completion_date` (Date)
+- `expected_cost` (Decimal)
+- `actual_invested` (Decimal)
+- `expected_value` (Decimal)
+- `expected_monthly_income` (Decimal)
+- `actual_monthly_income` (Decimal)
+- `priority` (Enum: Low, Medium, High, Critical)
+- `project_id` (UUID, Foreign Key to `projects.id` for Roadmap integration)
+
+**Model: `AssetIdea` (Opportunity Vault)**
+- `id` (UUID)
+- `title` (String)
+- `estimated_cost` (Decimal)
+- `estimated_time_months` (Int)
+- `potential_roi_percent` (Decimal)
+- `risk_level` (Enum: Low, Medium, High)
+- `priority` (Enum: Low, Medium, High)
+- `notes` (Text)
+- `research_links` (Text/JSON)
+
+### 2. Asset Scoring System
+
+The backend will compute an `asset_score` (1-100) on the fly (or via a DB property) based on an algorithmic weighting of:
+- ROI Potential
+- Income Potential
+- Scalability (We can add a `scalability` 1-10 field to the Asset table)
+- Risk (Inversely proportional)
+- Time Required (Inversely proportional)
+- Capital Required (Inversely proportional)
+
+### 3. API Routers (`backend/app/api/v1/assets.py`)
+- `GET /api/v1/assets/dashboard` (Aggregates Total Asset Value, Future Value, Passive Income, Growth Trend)
+- `CRUD /api/v1/assets`
+- `CRUD /api/v1/asset-ideas`
+
+### 4. Frontend Pages
+
+#### [NEW] `src/pages/assets/AssetDashboardPage.tsx`
+- **Asset Portfolio Dashboard:** Visual summaries (Total Assets, Assets under development, Value growth, Passive Income).
+- **Asset Financial Analysis:** Charts showing ROI, Payback periods, and Growth Potential.
+
+#### [NEW] `src/pages/assets/AssetCreationTrackerPage.tsx`
+- List/Table of all active assets.
+- Lifecycle Status tracker.
+- Button to view/manage the linked Roadmap (Project Kanban).
+
+#### [NEW] `src/pages/assets/AssetOpportunityVaultPage.tsx`
+- Grid of future ideas.
+- Display the automatically calculated **Asset Score**.
+
+#### [MODIFY] `src/components/layout/Sidebar.tsx`
+- Add a new "ASSET PLANNING" section with links to the above three pages.
+
+#### [MODIFY] `src/App.tsx`
+- Register the new routes.
+
+## Verification Plan
+
+### Manual Verification
+1. Verify the Sidebar contains the new Asset Planning module.
+2. Create an Asset Idea and verify the Score System (1-100) calculates correctly.
+3. Promote an Idea to an Active Asset and verify it appears in the Creation Tracker.
+4. Verify the Asset Dashboard aggregates the Expected Monthly Income and Actual Monthly Income correctly.
