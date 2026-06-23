@@ -10,7 +10,7 @@ from app.core.config import get_settings
 from app.core.database import engine, Base
 from app.api.v1 import (
     auth, expenses, incomes, debts, investments, financial_goals, dashboard,
-    life_goals, dreams, projects, tasks, journal, assets
+    life_goals, dreams, projects, tasks, journal, assets, second_brain
 )
 import app.models  # Ensure all models are registered
 
@@ -92,6 +92,7 @@ app.include_router(projects.router, prefix=API_PREFIX)
 app.include_router(tasks.router, prefix=API_PREFIX)
 app.include_router(journal.router, prefix=API_PREFIX)
 app.include_router(assets.router, prefix=API_PREFIX)
+app.include_router(second_brain.router, prefix=API_PREFIX)
 
 
 @app.get("/health")

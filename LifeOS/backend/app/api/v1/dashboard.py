@@ -133,7 +133,7 @@ async def get_dashboard(
         .group_by("month")
         .order_by("month")
     )
-    inc_map = {str(row[0].date()): float(row[1]) for row in r_inc.all()}
+    inc_map = {str(row[0]): float(row[1]) for row in r_inc.all()}
 
     r_exp = await db.execute(
         select(
@@ -144,7 +144,7 @@ async def get_dashboard(
         .group_by("month")
         .order_by("month")
     )
-    exp_map = {str(row[0].date()): float(row[1]) for row in r_exp.all()}
+    exp_map = {str(row[0]): float(row[1]) for row in r_exp.all()}
 
     all_months = sorted(set(list(inc_map.keys()) + list(exp_map.keys())))
     for m in all_months:

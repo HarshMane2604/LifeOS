@@ -14,10 +14,10 @@ import {
   DebtsPage,
   InvestmentsPage,
   NetWorthPage,
-  FinancialGoalsPage,
   FinancialIdeasPage,
-  BrainPage,
 } from '@/pages/PlaceholderPages';
+import BrainPage from '@/pages/brain/BrainPage';
+import FinancialGoalsPage from '@/pages/finance/FinancialGoalsPage';
 import LifeTimelinePage from '@/pages/timeline/LifeTimelinePage';
 import DreamsPage from '@/pages/dreams/DreamsPage';
 import GoalsPage from '@/pages/goals/GoalsPage';
