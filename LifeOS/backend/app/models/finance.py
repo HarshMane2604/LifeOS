@@ -30,6 +30,11 @@ import enum
 class DebtType(str, enum.Enum):
     PERSONAL_LOAN = "personal_loan"
     HOME_LOAN = "home_loan"
+    VEHICLE_LOAN = "vehicle_loan"
+    EDUCATION_LOAN = "education_loan"
+    BUSINESS_LOAN = "business_loan"
+    BNPL = "bnpl"
+    OTHER = "other"
     BORROWED = "borrowed"
     LENT = "lent"
     CREDIT_CARD = "credit_card"
@@ -174,8 +179,11 @@ class Debt(Base):
     current_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     monthly_payment: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2))
     due_date: Mapped[Optional[date]] = mapped_column(Date)
+    start_date: Mapped[Optional[date]] = mapped_column(Date)
+    end_date: Mapped[Optional[date]] = mapped_column(Date)
     lent_to: Mapped[Optional[str]] = mapped_column(String(200))
     borrowed_from: Mapped[Optional[str]] = mapped_column(String(200))
+    contact_info: Mapped[Optional[str]] = mapped_column(String(200))
     status: Mapped[DebtStatus] = mapped_column(
         SAEnum(DebtStatus), default=DebtStatus.ACTIVE
     )

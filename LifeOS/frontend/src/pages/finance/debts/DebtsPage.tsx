@@ -1,0 +1,379 @@
+import { useState, useEffect } from 'react';
+import { CreditCard, Calendar as CalendarIcon, BarChart3, Trophy, Activity, Wallet, Plus, ChevronLeft, ChevronRight, Home, Car, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import api from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
+import AddDebtModal from './modals/AddDebtModal';
+import RecordEMIModal from './modals/RecordEMIModal';
+import EMICalendar from '@/components/ui/EMICalendar';
+
+interface DebtAnalytics {
+  total_debt: number;
+  monthly_emi: number;
+  total_interest_remaining: number;
+  debt_free_progress: number;
+  health_score: number;
+  active_debts_count: number;
+}
+
+export default function DebtsPage() {
+  const [debts, setDebts] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<DebtAnalytics | null>(null);
+  const [strategy, setStrategy] = useState<any>(null);
+  const [calendarData, setCalendarData] = useState<any[]>([]);
+  const [method, setMethod] = useState<'snowball' | 'avalanche'>('snowball');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedEmiDate, setSelectedEmiDate] = useState<Date | null>(null);
+  const [showUpcomingEmis, setShowUpcomingEmis] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [debtsRes, analyticsRes, strategyRes, calendarRes] = await Promise.all([
+        api.get('/debts'),
+        api.get('/debts/analytics'),
+        api.get('/debts/strategy'),
+        api.get('/debts/calendar')
+      ]);
+      setDebts(debtsRes as any[]);
+      setAnalytics(analyticsRes as DebtAnalytics);
+      setStrategy(strategyRes);
+      setCalendarData((calendarRes as any).calendar || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading || !analytics || !strategy) return <div style={{ padding: 24 }}>Loading Dashboard...</div>;
+
+  const currentPlan = method === 'snowball' ? strategy.snowball : strategy.avalanche;
+  const activeDebts = debts.filter(d => d.status === 'active' && !['lent', 'borrowed'].includes(d.type));
+
+  const donutData = [
+    { name: 'Completed', value: analytics.debt_free_progress },
+    { name: 'Remaining', value: 100 - analytics.debt_free_progress },
+  ];
+
+  const getDebtIcon = (type: string) => {
+    if (type.includes('home')) return <Home size={20} className="text-emerald-600" />;
+    if (type.includes('vehicle')) return <Car size={20} className="text-blue-600" />;
+    return <CreditCard size={20} className="text-amber-600" />;
+  };
+
+  const getDebtTag = (type: string) => {
+    if (['home_loan', 'education_loan'].includes(type)) {
+      return <span className="badge badge-emerald">Good Debt</span>;
+    }
+    return <span className="badge badge-bad-debt">Bad Debt</span>;
+  };
+
+  return (
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
+        <div>
+          <h1 className="page-title" style={{ fontSize: 18, marginBottom: 0, lineHeight: 1.2 }}>Debt Management</h1>
+          <p className="page-description" style={{ fontSize: 12, marginBottom: 0, marginTop: 4 }}>Plan, prioritize and pay off your debts faster with the right strategy.</p>
+        </div>
+
+        {/* Upcoming EMIs Popover */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowUpcomingEmis(!showUpcomingEmis)}
+            style={{ padding: '8px 16px', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text-primary)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-tertiary)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-secondary)'}
+          >
+            <CalendarIcon size={16} className="text-emerald-500" />
+            Upcoming EMIs
+          </button>
+
+          {showUpcomingEmis && (
+            <div className="glass-card popover-anim" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 350, padding: 16, zIndex: 50, border: '1px solid var(--color-border)', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>Upcoming EMIs</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {calendarData.slice(0, 5).map((item: any, idx: number) => {
+                  const isPaid = idx === 0;
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-muted)', width: 60 }}>
+                        {new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </div>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Home size={12} className="text-emerald-500" />
+                      </div>
+                      <div style={{ flex: 1, paddingLeft: 12 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>{item.title.replace('EMI: ', '')}</div>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0 }}>Bank</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="font-mono-financial" style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>{formatCurrency(item.amount)}</div>
+                        <div style={{ display: 'inline-block', marginTop: 4 }}>
+                          {isPaid ? <span className="badge badge-emerald" style={{ fontSize: 10 }}>Paid ✔</span> : <span className="badge badge-amber" style={{ fontSize: 10 }}>Upcoming</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {calendarData.length === 0 && <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>No upcoming EMIs.</p>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* KPI Cards Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
+        <div className="metric-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Debt</p>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-accent-emerald-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-emerald)' }}><Wallet size={16} /></div>
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>{formatCurrency(analytics.total_debt)}</h2>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Across {analytics.active_debts_count} active debts</p>
+        </div>
+
+        <div className="metric-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>Monthly EMI</p>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-accent-cyan-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-cyan)' }}><CalendarIcon size={16} /></div>
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>{formatCurrency(analytics.monthly_emi)}</h2>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Total monthly obligation</p>
+        </div>
+
+        <div className="metric-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Interest</p>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-accent-emerald-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-emerald)' }}><BarChart3 size={16} /></div>
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>{formatCurrency(analytics.total_interest_remaining)}</h2>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Remaining interest</p>
+        </div>
+
+        <div className="metric-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>Debt Free By</p>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-accent-amber-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-amber)' }}><Trophy size={16} /></div>
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>Dec 2028</h2>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>With current plan</p>
+        </div>
+
+        <div className="metric-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>Health Score</p>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-accent-rose-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-rose)' }}><Activity size={16} /></div>
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-accent-rose)', marginBottom: 4 }}>{analytics.health_score}/100</h2>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Very Good</p>
+        </div>
+      </div>
+
+      {/* Main Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr', gap: 16, alignItems: 'start' }}>
+
+        {/* Left Column (1 box) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Strategy Selection */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div
+              onClick={() => setMethod('snowball')}
+              style={{ flex: 1, padding: 16, borderRadius: 'var(--radius-lg)', border: method === 'snowball' ? '2px solid var(--color-text-muted)' : '1px solid var(--color-border)', background: method === 'snowball' ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)', cursor: 'pointer', textAlign: 'center' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: method === 'snowball' ? '5px solid var(--color-text-muted)' : '1px solid var(--color-border)' }} />
+                <span style={{ fontWeight: 600, fontSize: 13, color: method === 'snowball' ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>Snowball Method</span>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Pay smallest debt first to build momentum.</p>
+            </div>
+
+            <div
+              onClick={() => setMethod('avalanche')}
+              style={{ flex: 1, padding: 16, borderRadius: 'var(--radius-lg)', border: method === 'avalanche' ? '2px solid var(--color-text-muted)' : '1px solid var(--color-border)', background: method === 'avalanche' ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)', cursor: 'pointer', textAlign: 'center' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: method === 'avalanche' ? '5px solid var(--color-text-muted)' : '1px solid var(--color-border)' }} />
+                <span style={{ fontWeight: 600, fontSize: 13, color: method === 'avalanche' ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>Avalanche Method</span>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Pay highest interest debt first to save more.</p>
+            </div>
+          </div>
+
+          {/* Recommended Order */}
+          <div className="glass-card" style={{ padding: 20, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <Trophy size={16} color="var(--color-text-muted)" />
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>Recommended Order ({method === 'snowball' ? 'Snowball' : 'Avalanche'})</h3>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                <span>Order</span>
+                <span>Est. Debt Free Date</span>
+              </div>
+              <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 120, overflowY: 'auto', paddingRight: 4 }}>
+                {currentPlan.map((d: any, i: number) => (
+                  <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: '4px', background: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, border: '1px solid var(--color-border)' }}>{i + 1}</div>
+                    <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>{d.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', flexShrink: 0 }}>Dec 2028</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 500 }}>
+                <CheckCircle2 size={14} /> You will save ₹1,18,400 in interest
+              </div>
+            </div>
+          </div>
+
+          {/* Debt Free Progress */}
+          <div className="glass-card" style={{ padding: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Debt Free Progress</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 120, height: 120, position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={donutData} cx="50%" cy="50%" innerRadius={45} outerRadius={60} stroke="none" dataKey="value">
+                      <Cell fill="var(--color-text-muted)" />
+                      <Cell fill="var(--color-bg-tertiary)" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-text-primary)' }}>{Math.round(analytics.debt_free_progress)}%</span>
+                  <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Completed</span>
+                </div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Paid Till Date</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>{formatCurrency(debts.reduce((s, d) => s + (d.principal - d.current_balance), 0))}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Remaining Debt</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>{formatCurrency(analytics.total_debt)}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Target Date</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>Dec 2028</p>
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-accent-emerald)' }}>On Track</span>
+              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>4 yrs 7 mos left ⏱</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Middle Column (2 boxes) */}
+        <div className="glass-card" style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600 }}>Active Debts</h3>
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '6px 12px', color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-tertiary)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-secondary)'}
+            >
+              <Plus size={14} className="text-emerald-500" /> Add Debt
+            </button>
+          </div>
+
+          <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 520, overflowY: 'auto', paddingRight: 8 }}>
+            {activeDebts.map(d => {
+              const paidProgress = d.principal > 0 ? ((d.principal - d.current_balance) / d.principal) * 100 : 0;
+              return (
+                <div key={d.id} style={{ padding: 16, border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-primary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {getDebtIcon(d.type)}
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <h4 style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{d.name}</h4>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{d.type.replace('_', ' ').toUpperCase()}</span>
+                          {getDebtTag(d.type)}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="font-mono-financial" style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text-primary)' }}>{formatCurrency(d.current_balance)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>Outstanding</div>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div style={{ height: 4, background: 'var(--color-bg-secondary)', borderRadius: 2, marginBottom: 8, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${paidProgress}%`, background: ['home_loan', 'vehicle_loan', 'education_loan'].includes(d.type) ? 'var(--color-accent-emerald)' : 'var(--color-accent-amber)' }} />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-muted)' }}>
+                    <span>{Math.round(paidProgress)}% Paid</span>
+                    <span>EMI: {formatCurrency(d.monthly_payment || 0)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+
+        </div>
+
+        {/* Right Column (2 boxes) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Calendar */}
+          <div className="glass-card" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600 }}>EMI Calendar</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-accent-emerald)' }} /> Paid</span>
+                <span style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-accent-amber)' }} /> Upcoming</span>
+                <span style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-accent-rose)' }} /> Overdue</span>
+              </div>
+            </div>
+
+            {/* Custom Dynamic Calendar */}
+            <EMICalendar
+              events={calendarData}
+              onDateClick={(d) => setSelectedEmiDate(d)}
+            />
+          </div>
+
+          {/* Upcoming EMIs removed and moved to Popover in header */}
+        </div>
+      </div>
+
+      {/* Bottom Bar */}
+
+
+      {/* Modals */}
+      {showAddModal && (
+        <AddDebtModal onClose={() => setShowAddModal(false)} onRefresh={fetchData} />
+      )}
+      {selectedEmiDate && (
+        <RecordEMIModal
+          date={selectedEmiDate}
+          activeDebts={activeDebts}
+          onClose={() => setSelectedEmiDate(null)}
+          onRefresh={fetchData}
+        />
+      )}
+    </div>
+  );
+}

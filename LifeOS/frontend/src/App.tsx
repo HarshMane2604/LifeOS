@@ -11,11 +11,11 @@ import DashboardPage from '@/pages/dashboard/DashboardPage';
 import ExpensesPage from '@/pages/finance/ExpensesPage';
 import IncomePage from '@/pages/finance/IncomePage';
 import {
-  DebtsPage,
   InvestmentsPage,
   NetWorthPage,
   FinancialIdeasPage,
 } from '@/pages/PlaceholderPages';
+import DebtsPage from '@/pages/finance/debts/DebtsPage';
 import BrainPage from '@/pages/brain/BrainPage';
 import FinancialGoalsPage from '@/pages/finance/FinancialGoalsPage';
 import LifeTimelinePage from '@/pages/timeline/LifeTimelinePage';

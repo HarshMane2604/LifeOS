@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getGreeting } from '@/lib/utils';
 import { Sun, Moon, LogOut, Search, Menu } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 interface TopbarProps {
   sidebarWidth: number;
@@ -111,6 +112,9 @@ export default function Topbar({ sidebarWidth, onMobileMenuToggle }: TopbarProps
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
+
+        {/* Notifications */}
+        <NotificationCenter />
 
         {/* Logout */}
         <button

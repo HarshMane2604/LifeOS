@@ -103,16 +103,19 @@ class DebtBase(BaseModel):
     type: str
     principal: Decimal
     interest_rate: Decimal = Decimal("0.00")
-    current_balance: Decimal
+    current_balance: Optional[Decimal] = None
     monthly_payment: Optional[Decimal] = None
     due_date: Optional[date] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     lent_to: Optional[str] = None
     borrowed_from: Optional[str] = None
+    contact_info: Optional[str] = None
     notes: Optional[str] = None
 
 
 class DebtCreate(DebtBase):
-    pass
+    tenure_months: Optional[int] = None
 
 
 class DebtUpdate(BaseModel):
@@ -123,8 +126,11 @@ class DebtUpdate(BaseModel):
     current_balance: Optional[Decimal] = None
     monthly_payment: Optional[Decimal] = None
     due_date: Optional[date] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     lent_to: Optional[str] = None
     borrowed_from: Optional[str] = None
+    contact_info: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
 
@@ -279,3 +285,21 @@ class PortfolioSummary(BaseModel):
     total_profit_loss: Decimal = Decimal("0")
     overall_roi: Decimal = Decimal("0")
     by_type: list[dict] = []
+
+class DebtAnalyticsResponse(BaseModel):
+    total_debt: Decimal
+    monthly_emi: Decimal
+    total_interest_remaining: Decimal
+    active_debts_count: int
+    debt_free_progress: float
+    debt_to_income_ratio: float
+    health_score: int
+    breakdown_by_type: list[dict]
+    reduction_trend: list[dict]
+
+class DebtStrategyResponse(BaseModel):
+    snowball: list[dict]
+    avalanche: list[dict]
+
+class EMICalendarResponse(BaseModel):
+    calendar: list[dict]
