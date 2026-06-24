@@ -157,6 +157,17 @@ async def create_debt(
         else:
             data["monthly_payment"] = Decimal(str(round(principal / tenure_months, 2)))
             
+    # Calculate End Date if not provided but start_date and tenure_months are given
+    if not data.get("end_date") and data.get("start_date") and tenure_months:
+        import calendar
+        start_date = data["start_date"]
+        month = start_date.month - 1 + tenure_months
+        year = start_date.year + month // 12
+        month = month % 12 + 1
+        day = start_date.day
+        max_day = calendar.monthrange(year, month)[1]
+        data["end_date"] = date(year, month, min(day, max_day))
+
     # 2. Calculate Current Balance if not provided
     if data.get("current_balance") is None:
         start_date = data.get("start_date")
@@ -191,6 +202,7 @@ async def create_debt(
     debt = Debt(**data)
     db.add(debt)
     await db.flush()
+    await db.commit()
     await db.refresh(debt)
     return debt
 
@@ -224,6 +236,7 @@ async def update_debt(
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(debt, key, value)
     await db.flush()
+    await db.commit()
     await db.refresh(debt)
     return debt
 

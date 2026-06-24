@@ -46,8 +46,7 @@
 
   --color-accent-blue: #60A5FA;
 
-  --color-bad-debt: #F87171;
-  --color-bad-debt-glow: rgba(248, 113, 113, 0.15);
+
 
   /* ── Gradients ── */
   --gradient-primary: linear-gradient(135deg, #8b5cf6, #06b6d4);
@@ -119,7 +118,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4D4D4D;
+  background: var(--color-border-active);
   border-radius: var(--radius-full);
 }
 
@@ -132,7 +131,7 @@ body {
    ═══════════════════════════════════════════ */
 
 .glass-card {
-  background: #202020;
+  background: var(--color-bg-elevated);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-border);
@@ -149,7 +148,7 @@ body {
    ═══════════════════════════════════════════ */
 
 .metric-card {
-  background: #202020;
+  background: var(--color-bg-elevated);
   backdrop-filter: blur(20px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -288,7 +287,7 @@ body {
 }
 
 .sidebar-nav-item.active {
-  background: #202020;
+  background: var(--color-bg-elevated);
   color: var(--color-text-primary);
 }
 
@@ -474,11 +473,6 @@ body {
 .badge-rose {
   background: var(--color-accent-rose-glow);
   color: var(--color-accent-rose);
-}
-
-.badge-bad-debt {
-  background: var(--color-bad-debt-glow);
-  color: var(--color-bad-debt);
 }
 
 .badge-amber {

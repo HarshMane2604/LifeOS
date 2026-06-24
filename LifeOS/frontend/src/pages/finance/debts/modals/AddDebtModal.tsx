@@ -3,18 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save } from 'lucide-react';
 import api from '@/lib/api';
 
-export default function AddDebtModal({ onClose, onRefresh }: { onClose: () => void; onRefresh: () => void }) {
+export default function AddDebtModal({ onClose, onRefresh, initialData }: { onClose: () => void; onRefresh: () => void; initialData?: any }) {
   const [formData, setFormData] = useState({
-    name: '',
-    type: 'personal_loan',
-    principal: '',
-    current_balance: '',
-    interest_rate: '0',
-    monthly_payment: '',
+    name: initialData?.name || '',
+    type: initialData?.type || 'personal_loan',
+    principal: initialData?.principal?.toString() || '',
+    current_balance: initialData?.current_balance?.toString() || '',
+    interest_rate: initialData?.interest_rate?.toString() || '0',
+    monthly_payment: initialData?.monthly_payment?.toString() || '',
     tenure_months: '',
-    start_date: '',
-    due_date: '',
-    contact_info: ''
+    start_date: initialData?.start_date ? initialData.start_date.split('T')[0] : '',
+    due_date: initialData?.due_date ? initialData.due_date.split('T')[0] : '',
+    contact_info: initialData?.contact_info || ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -22,16 +22,25 @@ export default function AddDebtModal({ onClose, onRefresh }: { onClose: () => vo
     e.preventDefault();
     try {
       setLoading(true);
-      await api.post('/debts', {
+      const payload: any = {
         ...formData,
         principal: parseFloat(formData.principal),
         current_balance: formData.current_balance ? parseFloat(formData.current_balance) : null,
         interest_rate: parseFloat(formData.interest_rate),
         monthly_payment: formData.monthly_payment ? parseFloat(formData.monthly_payment) : null,
-        tenure_months: formData.tenure_months ? parseInt(formData.tenure_months) : null,
         start_date: formData.start_date || null,
         due_date: formData.due_date || null
-      });
+      };
+
+      if (formData.tenure_months) {
+        payload.tenure_months = parseInt(formData.tenure_months);
+      }
+
+      if (initialData) {
+        await api.put(`/debts/${initialData.id}`, payload);
+      } else {
+        await api.post('/debts', payload);
+      }
       onRefresh();
       onClose();
     } catch (err) {
@@ -53,7 +62,7 @@ export default function AddDebtModal({ onClose, onRefresh }: { onClose: () => vo
         style={{ position: 'relative', width: '100%', maxWidth: 500, padding: 24, maxHeight: '90vh', overflowY: 'auto' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700 }}>Add Debt / Loan</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700 }}>{initialData ? 'Edit Debt / Loan' : 'Add Debt / Loan'}</h2>
           <button onClick={onClose} className="btn-secondary" style={{ padding: 8 }}><X size={16} /></button>
         </div>
 
@@ -127,7 +136,7 @@ export default function AddDebtModal({ onClose, onRefresh }: { onClose: () => vo
             <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={loading} className="btn-primary">
               <Save size={16} style={{ marginRight: 8 }} />
-              {loading ? 'Saving...' : 'Save Debt'}
+              {loading ? 'Saving...' : (initialData ? 'Save Changes' : 'Save Debt')}
             </button>
           </div>
         </form>

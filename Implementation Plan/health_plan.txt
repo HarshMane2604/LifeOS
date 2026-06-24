@@ -1,0 +1,9 @@
+The frontend (DebtsPage.tsx) then just takes this value from the /debts/analytics API response and displays it as 85/100.
+
+Since this is currently a static mock value, would you like me to implement a real logic for it? We could calculate a dynamic health score based on factors like:
+
+Debt-to-Income Ratio (if we link it to your income data)
+How many EMIs are overdue vs paid on time
+Your overall Debt Free Progress percentage
+The average interest rate of your active debts
+Let me know if you want to make it dynamic and what factors you'd like to use!
