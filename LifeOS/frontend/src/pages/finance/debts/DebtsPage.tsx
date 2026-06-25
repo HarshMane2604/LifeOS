@@ -43,7 +43,11 @@ export default function DebtsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState<any>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<any>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; debt: any } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    debt: any;
+  } | null>(null);
   const [selectedEmiDate, setSelectedEmiDate] = useState<Date | null>(null);
   const [selectedDebtDetails, setSelectedDebtDetails] = useState<any>(null);
   const [showUpcomingEmis, setShowUpcomingEmis] = useState(false);
