@@ -93,22 +93,52 @@ async def get_emi_calendar(
     _user: dict = Depends(get_current_user),
 ):
     """Calendar view of upcoming and overdue EMIs."""
-    query = select(Debt).where(Debt.status == "active").where(Debt.due_date.isnot(None))
+    query = select(Debt).where(Debt.status == "active")
     result = await db.execute(query)
     debts = result.scalars().all()
 
     today = date.today()
-    calendar = []
+    calendar_events = []
+    
     for d in debts:
-        if d.due_date:
-            # Normalize to this month for upcoming
-            this_month_due = d.due_date.replace(year=today.year, month=today.month)
+        if not d.monthly_payment or float(d.monthly_payment) <= 0:
+            continue
+            
+        if d.start_date and d.end_date:
+            import calendar as cal
+            current_date = d.start_date
+            while current_date <= d.end_date:
+                if current_date < today:
+                    status = "paid"
+                else:
+                    status = "upcoming"
+                    
+                calendar_events.append({
+                    "date": str(current_date),
+                    "title": f"EMI: {d.name}",
+                    "amount": float(d.monthly_payment or 0),
+                    "status": status,
+                    "debt_id": str(d.id)
+                })
+                
+                month = current_date.month % 12 + 1
+                year = current_date.year + current_date.month // 12
+                day = d.start_date.day
+                max_day = cal.monthrange(year, month)[1]
+                current_date = date(year, month, min(day, max_day))
+        elif d.due_date:
+            import calendar as cal
+            try:
+                this_month_due = d.due_date.replace(year=today.year, month=today.month)
+            except ValueError:
+                max_day = cal.monthrange(today.year, today.month)[1]
+                this_month_due = d.due_date.replace(year=today.year, month=today.month, day=min(d.due_date.day, max_day))
+
             status = "upcoming"
             if this_month_due < today:
                 status = "overdue"
-            # Could check DebtPayment to see if paid this month
             
-            calendar.append({
+            calendar_events.append({
                 "date": str(this_month_due),
                 "title": f"EMI: {d.name}",
                 "amount": float(d.monthly_payment or 0),
@@ -116,7 +146,7 @@ async def get_emi_calendar(
                 "debt_id": str(d.id)
             })
 
-    return EMICalendarResponse(calendar=calendar)
+    return EMICalendarResponse(calendar=calendar_events)
 
 
 

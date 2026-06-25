@@ -16,6 +16,7 @@ import {
   FinancialIdeasPage,
 } from '@/pages/PlaceholderPages';
 import DebtsPage from '@/pages/finance/debts/DebtsPage';
+import DebtPlanPage from '@/pages/finance/debts/DebtPlanPage';
 import BrainPage from '@/pages/brain/BrainPage';
 import FinancialGoalsPage from '@/pages/finance/FinancialGoalsPage';
 import LifeTimelinePage from '@/pages/timeline/LifeTimelinePage';
@@ -99,6 +100,7 @@ function AppRoutes() {
         <Route path="/finance/expenses" element={<ExpensesPage />} />
         <Route path="/finance/income" element={<IncomePage />} />
         <Route path="/finance/debts" element={<DebtsPage />} />
+        <Route path="/finance/debts/:id/plan" element={<DebtPlanPage />} />
         <Route path="/finance/investments" element={<InvestmentsPage />} />
         <Route path="/finance/net-worth" element={<NetWorthPage />} />
         <Route path="/finance/goals" element={<FinancialGoalsPage />} />

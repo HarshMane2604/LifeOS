@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -12,18 +12,34 @@ import {
   MiniMap,
   Node,
   Panel,
-  useReactFlow
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import ContextMenu from './ContextMenu';
-import CanvasToolbar from './CanvasToolbar';
+  useReactFlow,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import ContextMenu from "./ContextMenu";
+import CanvasToolbar from "./CanvasToolbar";
 import {
-  TaskNode, MilestoneNode, NoteNode, IdeaNode, GoalNode,
-  ResourceNode, BudgetNode, DecisionNode, QuestionNode,
-  RiskNode, StickyNode, HeadingNode, ImageNode, CircleNode, RectangleNode,
-  SquareNode, RhombusNode, BubbleNode, HexagonNode, DividerNode
-} from './CustomNodes';
-import { useCanvasHistory } from '../../hooks/useCanvasHistory';
+  TaskNode,
+  MilestoneNode,
+  NoteNode,
+  IdeaNode,
+  GoalNode,
+  ResourceNode,
+  BudgetNode,
+  DecisionNode,
+  QuestionNode,
+  RiskNode,
+  StickyNode,
+  HeadingNode,
+  ImageNode,
+  CircleNode,
+  RectangleNode,
+  SquareNode,
+  RhombusNode,
+  BubbleNode,
+  HexagonNode,
+  DividerNode,
+} from "./CustomNodes";
+import { useCanvasHistory } from "../../hooks/useCanvasHistory";
 
 const nodeTypes = {
   taskNode: TaskNode,
@@ -48,15 +64,19 @@ const nodeTypes = {
   dividerNode: DividerNode,
 };
 
-interface AssetRoadmapCanvasProps {
+interface MainCanvasProps {
   initialData: any;
   onSave: (data: any) => void;
 }
 
-function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
+function Flow({ initialData, onSave }: MainCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialData?.nodes || []);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialData?.edges || []);
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    initialData?.nodes || [],
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    initialData?.edges || [],
+  );
   const { screenToFlowPosition } = useReactFlow();
   const { takeSnapshot, undo, redo, canUndo, canRedo } = useCanvasHistory();
 
@@ -81,7 +101,7 @@ function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
       takeSnapshot(nodes, edges);
       setEdges((eds) => addEdge({ ...params, animated: true }, eds));
     },
-    [setEdges, nodes, edges, takeSnapshot]
+    [setEdges, nodes, edges, takeSnapshot],
   );
 
   const onPaneContextMenu = useCallback(
@@ -103,7 +123,7 @@ function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
 
       setMenuVisible(true);
     },
-    [screenToFlowPosition]
+    [screenToFlowPosition],
   );
 
   const closeMenu = () => setMenuVisible(false);
@@ -126,17 +146,17 @@ function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
   }, []);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData('application/reactflow/type');
-      const dataStr = event.dataTransfer.getData('application/reactflow/data');
+      const type = event.dataTransfer.getData("application/reactflow/type");
+      const dataStr = event.dataTransfer.getData("application/reactflow/data");
 
-      if (typeof type === 'undefined' || !type) {
+      if (typeof type === "undefined" || !type) {
         return;
       }
 
@@ -146,7 +166,9 @@ function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
       });
 
       let data = {};
-      try { data = JSON.parse(dataStr); } catch(e) {}
+      try {
+        data = JSON.parse(dataStr);
+      } catch (e) {}
 
       takeSnapshot(nodes, edges);
 
@@ -159,14 +181,14 @@ function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, setNodes, nodes, edges, takeSnapshot]
+    [screenToFlowPosition, setNodes, nodes, edges, takeSnapshot],
   );
 
   const handleUndo = () => undo(nodes, edges, setNodes, setEdges);
   const handleRedo = () => redo(nodes, edges, setNodes, setEdges);
 
   return (
-    <div ref={reactFlowWrapper} style={{ width: '100%', height: '100%' }}>
+    <div ref={reactFlowWrapper} style={{ width: "100%", height: "100%" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -186,16 +208,35 @@ function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
         <Background color="var(--color-border-active)" gap={24} size={2} />
         <Controls position="top-right" orientation="horizontal" />
         <MiniMap
-          nodeColor="var(--color-bg-tertiary)"
-          maskColor="var(--color-bg-primary)"
-          style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+          nodeColor={(n) => {
+            if (n.type === "noteNode") return "#F59E0B"; // amber
+            if (n.type === "taskNode") return "#10B981"; // emerald
+            if (n.type === "milestoneNode") return "#3B82F6"; // blue
+            if (n.type === "goalNode") return "#F43F5E"; // rose
+            if (n.type === "stickyNode") return "#FCD34D"; // yellow
+            if (n.type === "circleNode" || n.type === "hexagonNode")
+              return "#3B82F6";
+            if (n.type === "squareNode" || n.type === "rectangleNode")
+              return "#F59E0B";
+            if (n.type === "rhombusNode") return "#10B981";
+            if (n.type === "bubbleNode") return "#8B5CF6"; // violet
+            return "#6B7280"; // gray fallback
+          }}
+          maskColor="rgba(0, 0, 0, 0.15)"
+          style={{
+            background: "var(--color-bg-primary)",
+            border: "1px solid var(--color-border)",
+            borderRadius: 8,
+          }}
+          pannable
+          zoomable
         />
 
-        <CanvasToolbar 
-          onUndo={handleUndo} 
-          onRedo={handleRedo} 
-          canUndo={canUndo} 
-          canRedo={canRedo} 
+        <CanvasToolbar
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
       </ReactFlow>
 
@@ -212,7 +253,7 @@ function Flow({ initialData, onSave }: AssetRoadmapCanvasProps) {
   );
 }
 
-export default function AssetRoadmapCanvas(props: AssetRoadmapCanvasProps) {
+export default function MainCanvas(props: MainCanvasProps) {
   return (
     <ReactFlowProvider>
       <Flow {...props} />

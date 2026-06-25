@@ -5,8 +5,8 @@ engine = create_engine('sqlite:///lifeos.db')
 
 with engine.connect() as conn:
     try:
-        conn.execute(text('ALTER TABLE assets ADD COLUMN roadmap_canvas_data JSON'))
+        conn.execute(text('ALTER TABLE debts ADD COLUMN plan_canvas_data JSON'))
         conn.commit()
-        print("Successfully added roadmap_canvas_data column to assets table")
+        print("Successfully added plan_canvas_data column to debts table")
     except Exception as e:
         print(f"Error (column might already exist): {e}")

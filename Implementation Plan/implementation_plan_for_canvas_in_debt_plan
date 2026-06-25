@@ -1,0 +1,50 @@
+# Add Canvas Planning Tool to Debts
+
+We will add a dedicated canvas planning space to each individual debt. This allows you to plan repayment strategies (like brainstorming extra payments, visualization, attaching notes, etc.) exactly like you do for assets.
+
+## Open Questions
+- Do you want to restrict the canvas to specific types of debts, or should all active debts have the "Plan" button? (The plan assumes all active debts get the button).
+- Should the new page be named "Debt Plan Canvas" or "Debt Roadmap Canvas"? (The plan assumes "Debt Plan Canvas").
+
+## Proposed Changes
+
+### Database & Backend Models
+#### [MODIFY] app/models/finance.py
+- Add a new column `plan_canvas_data` of type `JSON` to the `Debt` model.
+
+#### [NEW] Database Migration
+- Run `alembic revision --autogenerate -m "add plan_canvas_data to debts"` to apply the schema change.
+
+### API Schemas
+#### [MODIFY] app/schemas/finance.py
+- Add `plan_canvas_data: Optional[Dict[str, Any]] = None` to the following schemas:
+  - `DebtBase`
+  - `DebtUpdate`
+  - `DebtResponse`
+
+### Frontend Application
+#### [NEW] src/pages/finance/debts/DebtPlanPage.tsx
+- Create a new page component that:
+  - Fetches a specific debt by ID.
+  - Renders the existing `AssetRoadmapCanvas` component, passing the `debt.plan_canvas_data`.
+  - Implements an `onSave` handler to `PUT` the updated canvas data back to the `/api/v1/debts/:id` endpoint.
+  - Includes a header that shows the debt name and a back button to return to the Debts dashboard.
+
+#### [MODIFY] src/App.tsx
+- Register the new route: `<Route path="/finance/debts/:id/plan" element={<DebtPlanPage />} />`
+
+#### [MODIFY] src/pages/finance/debts/DebtsPage.tsx
+- Inside the "Active Debts" list renderer (the middle column), add a new "Plan" button (using an icon like `Map` or `GitMerge`) next to or under the debt details.
+- Clicking the button will navigate the user to `/finance/debts/${debt.id}/plan`.
+
+## Verification Plan
+### Automated Tests
+- No new automated tests are required unless requested.
+
+### Manual Verification
+- Start the frontend and backend servers.
+- Navigate to the Debts page.
+- Verify the "Plan" button appears on the active debt cards.
+- Click "Plan" and ensure it routes correctly to the new Canvas page.
+- Add nodes/edges to the canvas and wait for the auto-save to trigger.
+- Refresh the page to verify the canvas data persists correctly in the database.

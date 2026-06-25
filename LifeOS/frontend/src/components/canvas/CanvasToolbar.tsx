@@ -39,22 +39,40 @@ export default function CanvasToolbar({ onUndo, onRedo, canUndo = false, canRedo
   ];
 
   return (
-    <div style={{
-      position: 'absolute',
-      left: 20,
-      top: '50%',
-      transform: 'translateY(-50%)',
-      background: 'var(--color-bg-primary)',
-      border: '1px solid var(--color-border)',
-      borderRadius: 'var(--radius-lg)',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-      padding: '8px 4px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 4,
-      zIndex: 10
-    }}>
-      {tools.map((tool, i) => (
+    <>
+      <style>
+        {`
+          .canvas-toolbar-scroll::-webkit-scrollbar {
+            display: none;
+          }
+          .canvas-toolbar-scroll {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+          }
+        `}
+      </style>
+      <div 
+        className="canvas-toolbar-scroll"
+        style={{
+          position: 'absolute',
+          left: 20,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          background: 'var(--color-bg-primary)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          padding: '8px 4px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+          zIndex: 10,
+          maxHeight: 'calc(100% - 40px)',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+      >
+        {tools.map((tool, i) => (
         <div
           key={i}
           draggable={!!tool.type}
@@ -221,6 +239,7 @@ export default function CanvasToolbar({ onUndo, onRedo, canUndo = false, canRedo
         </button>
       </div>
 
-    </div>
+      </div>
+    </>
   );
 }

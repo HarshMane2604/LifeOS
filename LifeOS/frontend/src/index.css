@@ -63,10 +63,10 @@
   --shadow-glow-emerald: 0 0 30px rgba(16, 185, 129, 0.2);
 
   /* ── Radius ── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 8px;
+  --radius-md: 3px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
   --radius-full: 9999px;
 
   /* ── Spacing ── */
@@ -300,7 +300,7 @@ body {
   padding: 10px 14px;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 3px;
   color: var(--color-text-primary);
   font-size: 14px;
   font-family: inherit;
@@ -315,6 +315,16 @@ body {
 .input-field:focus {
   border-color: var(--color-accent-violet);
   box-shadow: 0 0 0 3px var(--color-accent-violet-glow);
+}
+
+/* Hide number input arrows globally */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .btn-primary {
@@ -385,6 +395,27 @@ body {
 
 .btn-danger:hover {
   background: rgba(244, 63, 94, 0.2);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-ghost:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border);
 }
 
 /* ═══════════════════════════════════════════
@@ -497,6 +528,57 @@ body {
   border-radius: var(--radius-full);
   background: var(--gradient-primary);
   transition: width var(--transition-slow);
+}
+
+/* ═══════════════════════════════════════════
+   Dashboard Layout
+   ═══════════════════════════════════════════ */
+
+.dashboard-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  grid-template-areas:
+    "kpi1 kpi2 kpi3 kpi4 kpi5"
+    "col1 col2 col2 col3 col3";
+  align-items: start;
+}
+
+.kpi-1 { grid-area: kpi1; }
+.kpi-2 { grid-area: kpi2; }
+.kpi-3 { grid-area: kpi3; }
+.kpi-4 { grid-area: kpi4; }
+.kpi-5 { grid-area: kpi5; }
+.main-col-1 { grid-area: col1; display: flex; flex-direction: column; gap: 24px; }
+.main-col-2 { grid-area: col2; display: flex; flex-direction: column; gap: 16px; }
+.main-col-3 { grid-area: col3; display: flex; flex-direction: column; gap: 16px; }
+
+@media (max-width: 1400px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "kpi1 kpi1"
+      "col1 col1"
+      "kpi2 kpi3"
+      "col2 col2"
+      "kpi4 kpi5"
+      "col3 col3";
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "kpi1"
+      "col1"
+      "kpi2"
+      "kpi3"
+      "col2"
+      "kpi4"
+      "kpi5"
+      "col3";
+  }
 }
 
 /* ═══════════════════════════════════════════

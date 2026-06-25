@@ -15,6 +15,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    JSON,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -194,6 +195,7 @@ class Debt(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    plan_canvas_data: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Relationships
     payments: Mapped[list["DebtPayment"]] = relationship(

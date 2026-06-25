@@ -29,8 +29,8 @@ export default function EMICalendar({ events, onDateClick }: EMICalendarProps) {
   const startDayOfWeek = getDay(startOfMonth(currentMonth));
   const emptyDays = Array.from({ length: startDayOfWeek });
 
-  const getEventForDay = (day: Date) => {
-    return events.find(e => isSameDay(new Date(e.date), day));
+  const getEventsForDay = (day: Date) => {
+    return events.filter(e => isSameDay(new Date(e.date), day));
   };
 
   return (
@@ -52,30 +52,22 @@ export default function EMICalendar({ events, onDateClick }: EMICalendarProps) {
           <div key={`empty-${i}`} style={{ height: 50 }} />
         ))}
         {days.map(day => {
-          const event = getEventForDay(day);
+          const dayEvents = getEventsForDay(day);
           const isPast = isBefore(day, startOfDay(new Date()));
 
-          let dotColor = 'transparent';
+          let dots: string[] = [];
           let amountStr = null;
 
-          if (event) {
-            amountStr = formatCurrency(event.amount).replace('.00', '');
+          if (dayEvents.length > 0) {
+            const totalAmount = dayEvents.reduce((sum, e) => sum + e.amount, 0);
+            amountStr = formatCurrency(totalAmount).replace('.00', '');
 
-            // Mock status logic if not provided
-            const status = event.status || (isPast ? 'paid' : 'upcoming');
-
-            if (status === 'paid') {
-              dotColor = 'var(--color-accent-emerald)';
-            } else if (status === 'upcoming') {
-              dotColor = 'var(--color-accent-amber)';
-            } else if (status === 'overdue') {
-              dotColor = 'var(--color-accent-rose)';
-            }
-
-            // Hardcode demo values based on user mockup if date matches 15, 20, 25 for demo purposes
-            if (day.getDate() === 15) { dotColor = 'var(--color-accent-emerald)'; amountStr = '₹14.5K'; }
-            if (day.getDate() === 20) { dotColor = 'var(--color-accent-amber)'; amountStr = '₹7.5K'; }
-            if (day.getDate() === 25) { dotColor = 'var(--color-accent-rose)'; amountStr = '₹8K'; }
+            dots = dayEvents.slice(0, 3).map((event) => {
+              const status = event.status || (isPast ? 'paid' : 'upcoming');
+              if (status === 'paid') return 'var(--color-accent-emerald)';
+              if (status === 'upcoming') return 'var(--color-accent-amber)';
+              return 'var(--color-accent-rose)';
+            });
           }
 
           return (
@@ -90,7 +82,7 @@ export default function EMICalendar({ events, onDateClick }: EMICalendarProps) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 'var(--radius-sm)',
-                background: 'transparent',
+                background: dayEvents.length > 0 ? 'var(--color-bg-secondary)' : 'transparent',
                 color: 'var(--color-text-primary)',
                 border: '1px solid transparent',
                 cursor: 'pointer',
@@ -101,19 +93,30 @@ export default function EMICalendar({ events, onDateClick }: EMICalendarProps) {
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             >
-              {dotColor !== 'transparent' && (
+              {dots.length > 0 && (
                 <div style={{
                   position: 'absolute',
-                  top: 6,
-                  right: 6,
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: dotColor
-                }} />
+                  top: 4,
+                  right: 4,
+                  display: 'flex',
+                  gap: 2,
+                  alignItems: 'center'
+                }}>
+                  {dots.map((color, i) => (
+                    <div key={i} style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: '50%',
+                      background: color
+                    }} />
+                  ))}
+                  {dayEvents.length > 3 && (
+                    <span style={{ fontSize: 8, lineHeight: 1, color: 'var(--color-text-muted)' }}>+</span>
+                  )}
+                </div>
               )}
               {day.getDate()}
-              {amountStr && <span style={{ fontSize: 9, marginTop: 2, color: 'var(--color-text-muted)' }}>{amountStr}</span>}
+              {amountStr && <span style={{ fontSize: 9, marginTop: 2, color: 'var(--color-text-muted)' }}>{dayEvents.length > 1 ? `${dayEvents.length} EMIs` : amountStr}</span>}
             </div>
           );
         })}

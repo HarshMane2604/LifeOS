@@ -1,40 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { Asset } from '@/types/assets';
 import api from '@/lib/api';
 import { ArrowLeft, Save } from 'lucide-react';
 import MainCanvas from '@/components/canvas/MainCanvas';
 
-export default function AssetRoadmapPage() {
+export default function DebtPlanPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [asset, setAsset] = useState<Asset | null>(null);
+  const [debt, setDebt] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (id) fetchAsset(id);
+    if (id) fetchDebt(id);
   }, [id]);
 
-  const fetchAsset = async (assetId: string) => {
+  const fetchDebt = async (debtId: string) => {
     try {
-      const res = await api.get<Asset>(`/assets/${assetId}`);
-      setAsset(res);
+      const res = await api.get<any>(`/debts/${debtId}`);
+      setDebt(res);
     } catch (err) {
-      console.error('Failed to fetch asset', err);
+      console.error('Failed to fetch debt', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSaveCanvas = async (canvasData: any) => {
-    if (!asset) return;
+    if (!debt) return;
     setSaving(true);
     try {
-      await api.put(`/assets/${asset.id}`, {
-        roadmap_canvas_data: canvasData
+      await api.put(`/debts/${debt.id}`, {
+        plan_canvas_data: canvasData
       });
-      // Optionally update local asset state, but the canvas handles its own state
+      // Optionally update local state
     } catch (err) {
       console.error('Failed to save canvas', err);
     } finally {
@@ -43,7 +42,7 @@ export default function AssetRoadmapPage() {
   };
 
   if (loading) return <div className="page-container">Loading canvas...</div>;
-  if (!asset) return <div className="page-container">Asset not found.</div>;
+  if (!debt) return <div className="page-container">Debt not found.</div>;
 
   return (
     <div style={{
@@ -64,7 +63,7 @@ export default function AssetRoadmapPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
-            onClick={() => navigate('/assets/tracker')}
+            onClick={() => navigate('/finance/debts')}
             style={{
               background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -72,7 +71,7 @@ export default function AssetRoadmapPage() {
           >
             <ArrowLeft size={18} />
           </button>
-          <h1 style={{ fontSize: 16, fontWeight: 600 }}>{asset.name} <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>/ Roadmap Canvas</span></h1>
+          <h1 style={{ fontSize: 16, fontWeight: 600 }}>{debt.name} <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>/ Debt Plan Canvas</span></h1>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: 'var(--color-text-muted)' }}>
@@ -84,7 +83,7 @@ export default function AssetRoadmapPage() {
       {/* Canvas Area */}
       <div style={{ flex: 1, position: 'relative', background: 'var(--color-bg-primary)' }}>
         <MainCanvas
-          initialData={asset.roadmap_canvas_data}
+          initialData={debt.plan_canvas_data}
           onSave={handleSaveCanvas}
         />
       </div>

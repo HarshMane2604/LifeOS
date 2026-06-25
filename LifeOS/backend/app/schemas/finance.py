@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Dict, Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -112,6 +112,7 @@ class DebtBase(BaseModel):
     borrowed_from: Optional[str] = None
     contact_info: Optional[str] = None
     notes: Optional[str] = None
+    plan_canvas_data: Optional[Dict[str, Any]] = None
 
 
 class DebtCreate(DebtBase):
@@ -133,6 +134,7 @@ class DebtUpdate(BaseModel):
     contact_info: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    plan_canvas_data: Optional[Dict[str, Any]] = None
 
 
 class DebtResponse(DebtBase):

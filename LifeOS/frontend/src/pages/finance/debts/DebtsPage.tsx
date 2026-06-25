@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import {
   CreditCard,
   Calendar as CalendarIcon,
@@ -14,6 +15,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
+  Map,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
@@ -35,6 +37,7 @@ interface DebtAnalytics {
 }
 
 export default function DebtsPage() {
+  const navigate = useNavigate();
   const [debts, setDebts] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<DebtAnalytics | null>(null);
   const [strategy, setStrategy] = useState<any>(null);
@@ -178,6 +181,7 @@ export default function DebtsPage() {
                 zIndex: 50,
                 border: "1px solid var(--color-border)",
                 boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+                borderRadius: "3px",
               }}
             >
               <div
@@ -195,8 +199,12 @@ export default function DebtsPage() {
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
               >
-                {calendarData.slice(0, 5).map((item: any, idx: number) => {
-                  const isPaid = idx === 0;
+                {calendarData
+                  .filter((item: any) => item.status === "upcoming")
+                  .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .slice(0, 5)
+                  .map((item: any, idx: number) => {
+                  const isPaid = false;
                   return (
                     <div
                       key={idx}
@@ -301,15 +309,9 @@ export default function DebtsPage() {
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 16,
-        }}
-      >
-        <div className="metric-card">
+      {/* Responsive Dashboard Grid */}
+      <div className="dashboard-grid">
+        <div className="metric-card kpi-1">
           <div
             style={{
               display: "flex",
@@ -356,7 +358,7 @@ export default function DebtsPage() {
           </p>
         </div>
 
-        <div className="metric-card">
+        <div className="metric-card kpi-2">
           <div
             style={{
               display: "flex",
@@ -403,7 +405,7 @@ export default function DebtsPage() {
           </p>
         </div>
 
-        <div className="metric-card">
+        <div className="metric-card kpi-3">
           <div
             style={{
               display: "flex",
@@ -450,7 +452,7 @@ export default function DebtsPage() {
           </p>
         </div>
 
-        <div className="metric-card">
+        <div className="metric-card kpi-4">
           <div
             style={{
               display: "flex",
@@ -497,7 +499,7 @@ export default function DebtsPage() {
           </p>
         </div>
 
-        <div className="metric-card">
+        <div className="metric-card kpi-5">
           <div
             style={{
               display: "flex",
@@ -543,19 +545,8 @@ export default function DebtsPage() {
             Very Good
           </p>
         </div>
-      </div>
-
-      {/* Main Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 2fr 2fr",
-          gap: 16,
-          alignItems: "start",
-        }}
-      >
         {/* Left Column (1 box) */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div className="main-col-1">
           {/* Strategy Selection */}
           <div style={{ display: "flex", gap: 12 }}>
             <div
@@ -920,8 +911,8 @@ export default function DebtsPage() {
 
         {/* Middle Column (2 boxes) */}
         <div
-          className="glass-card"
-          style={{ padding: 24, display: "flex", flexDirection: "column" }}
+          className="glass-card main-col-2"
+          style={{ padding: 24 }}
         >
           <div
             style={{
@@ -1081,12 +1072,27 @@ export default function DebtsPage() {
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      fontSize: 11,
-                      color: "var(--color-text-muted)",
+                      alignItems: "center",
+                      marginTop: 12,
+                      paddingTop: 12,
+                      borderTop: "1px solid var(--color-border)"
                     }}
                   >
-                    <span>{Math.round(paidProgress)}% Paid</span>
-                    <span>EMI: {formatCurrency(d.monthly_payment || 0)}</span>
+                    <div style={{ display: "flex", gap: 16, fontSize: 11, color: "var(--color-text-muted)" }}>
+                      <span>{Math.round(paidProgress)}% Paid</span>
+                      <span>EMI: {formatCurrency(d.monthly_payment || 0)}</span>
+                    </div>
+                    <button
+                      className="btn-secondary"
+                      style={{ padding: "4px 8px", fontSize: 11, borderRadius: "5px" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/finance/debts/${d.id}/plan`);
+                      }}
+                    >
+                      <Map size={12} style={{ marginRight: 4 }} />
+                      Plan
+                    </button>
                   </div>
                 </div>
               );
@@ -1095,7 +1101,7 @@ export default function DebtsPage() {
         </div>
 
         {/* Right Column (2 boxes) */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div className="main-col-3">
           {/* Calendar */}
           <div className="glass-card" style={{ padding: 20 }}>
             <div
@@ -1273,6 +1279,7 @@ export default function DebtsPage() {
         <RecordEMIModal
           date={selectedEmiDate}
           activeDebts={activeDebts}
+          calendarData={calendarData}
           onClose={() => setSelectedEmiDate(null)}
           onRefresh={fetchData}
         />
