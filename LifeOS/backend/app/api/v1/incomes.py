@@ -18,6 +18,7 @@ from app.schemas.finance import (
     IncomeResponse,
     IncomeAnalytics,
 )
+import calendar
 
 router = APIRouter(prefix="/incomes", tags=["Income"])
 
@@ -29,6 +30,9 @@ async def list_incomes(
     category: Optional[str] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    timeframe: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(get_current_user),
 ):
@@ -36,10 +40,15 @@ async def list_incomes(
     query = select(Income)
     if category:
         query = query.where(Income.category == category)
-    if date_from:
-        query = query.where(Income.date >= date_from)
-    if date_to:
-        query = query.where(Income.date <= date_to)
+    if timeframe == "overall":
+        pass
+    elif month and year:
+        query = query.where(Income.month == month).where(Income.year == year)
+    else:
+        if date_from:
+            query = query.where(Income.date >= date_from)
+        if date_to:
+            query = query.where(Income.date <= date_to)
     query = query.order_by(Income.date.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
@@ -52,7 +61,10 @@ async def create_income(
     _user: dict = Depends(get_current_user),
 ):
     """Create a new income record."""
-    income = Income(**body.model_dump())
+    data = body.model_dump()
+    data["month"] = body.date.month
+    data["year"] = body.date.year
+    income = Income(**data)
     db.add(income)
     await db.flush()
     await db.refresh(income)
@@ -61,21 +73,127 @@ async def create_income(
 
 @router.get("/analytics", response_model=IncomeAnalytics)
 async def income_analytics(
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    timeframe: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(get_current_user),
 ):
     """Get income analytics."""
     today = date.today()
-    month_start = today.replace(day=1)
-    year_start = today.replace(month=1, day=1)
-
-    # Total this month
-    r = await db.execute(
-        select(func.coalesce(func.sum(Income.amount), 0)).where(
-            Income.date >= month_start
+    if timeframe == "overall":
+        year_start = date(today.year, 1, 1)
+        
+        r = await db.execute(
+            select(func.coalesce(func.sum(Income.amount), 0))
         )
-    )
-    total_month = r.scalar()
+        total_month = r.scalar()
+        
+        r_sources = await db.execute(
+            select(func.count(func.distinct(Income.source)))
+            .where(Income.income_type == "Active")
+        )
+        active_sources = r_sources.scalar() or 0
+        
+        r_type = await db.execute(
+            select(
+                Income.income_type,
+                func.sum(Income.amount).label("total"),
+            )
+            .group_by(Income.income_type)
+        )
+        
+        r_source_cat = await db.execute(
+            select(
+                Income.category,
+                func.sum(Income.amount).label("total"),
+            )
+            .group_by(Income.category)
+            .order_by(func.sum(Income.amount).desc())
+        )
+    elif month and year:
+        month_start = date(year, month, 1)
+        last_day = calendar.monthrange(year, month)[1]
+        month_end = date(year, month, last_day)
+        year_start = date(year, 1, 1)
+        
+        # Total this month (the selected month)
+        r = await db.execute(
+            select(func.coalesce(func.sum(Income.amount), 0)).where(
+                Income.date >= month_start,
+                Income.date <= month_end
+            )
+        )
+        total_month = r.scalar()
+        
+        # Active sources count for the selected month
+        r_sources = await db.execute(
+            select(func.count(func.distinct(Income.source)))
+            .where(Income.income_type == "Active",
+                   Income.date >= month_start,
+                   Income.date <= month_end)
+        )
+        active_sources = r_sources.scalar() or 0
+        
+        # Active vs Passive logic for the selected month
+        r_type = await db.execute(
+            select(
+                Income.income_type,
+                func.sum(Income.amount).label("total"),
+            )
+            .where(Income.date >= month_start, Income.date <= month_end)
+            .group_by(Income.income_type)
+        )
+        
+        # By source category for the selected month
+        r_source_cat = await db.execute(
+            select(
+                Income.category,
+                func.sum(Income.amount).label("total"),
+            )
+            .where(Income.date >= month_start, Income.date <= month_end)
+            .group_by(Income.category)
+            .order_by(func.sum(Income.amount).desc())
+        )
+    else:
+        month_start = today.replace(day=1)
+        year_start = today.replace(month=1, day=1)
+        
+        # Total this month
+        r = await db.execute(
+            select(func.coalesce(func.sum(Income.amount), 0)).where(
+                Income.date >= month_start
+            )
+        )
+        total_month = r.scalar()
+        
+        # Active sources count
+        r_sources = await db.execute(
+            select(func.count(func.distinct(Income.source)))
+            .where(Income.income_type == "Active")
+        )
+        active_sources = r_sources.scalar() or 0
+        
+        # Active vs Passive logic
+        r_type = await db.execute(
+            select(
+                Income.income_type,
+                func.sum(Income.amount).label("total"),
+            )
+            .where(Income.date >= year_start)
+            .group_by(Income.income_type)
+        )
+        
+        # By source category
+        r_source_cat = await db.execute(
+            select(
+                Income.category,
+                func.sum(Income.amount).label("total"),
+            )
+            .where(Income.date >= year_start)
+            .group_by(Income.category)
+            .order_by(func.sum(Income.amount).desc())
+        )
 
     # Total this year
     r = await db.execute(
@@ -85,29 +203,10 @@ async def income_analytics(
     )
     total_year = r.scalar()
 
-    # By source category
-    r = await db.execute(
-        select(
-            Income.category,
-            func.sum(Income.amount).label("total"),
-        )
-        .where(Income.date >= year_start)
-        .group_by(Income.category)
-        .order_by(func.sum(Income.amount).desc())
-    )
     by_source = [
-        {"name": str(row[0]), "total": float(row[1])} for row in r.all()
+        {"name": row[0].value if hasattr(row[0], 'value') else str(row[0]).replace('IncomeCategory.', ''), "total": float(row[1])} for row in r_source_cat.all()
     ]
 
-    # Active vs Passive logic
-    r_type = await db.execute(
-        select(
-            Income.income_type,
-            func.sum(Income.amount).label("total"),
-        )
-        .where(Income.date >= year_start)
-        .group_by(Income.income_type)
-    )
     
     active_total = 0.0
     passive_total = 0.0
@@ -122,21 +221,24 @@ async def income_analytics(
         {"name": "Passive", "total": passive_total}
     ]
 
-    # Active sources count
-    r_sources = await db.execute(
-        select(func.count(func.distinct(Income.source)))
-        .where(Income.income_type == "Active")
-    )
-    active_sources = r_sources.scalar() or 0
+
 
     # Monthly trend & active/passive trend (last 6 months)
+    trend_query = select(
+        extract("year", Income.date).label("year"),
+        extract("month", Income.date).label("month"),
+        Income.income_type,
+        func.sum(Income.amount).label("total"),
+    )
+    
+    if timeframe == "overall":
+        # Show all history up to today for overall
+        trend_query = trend_query.where(Income.date <= today)
+    elif month and year:
+        trend_query = trend_query.where(Income.date <= month_end)
+
     r_trend = await db.execute(
-        select(
-            extract("year", Income.date).label("year"),
-            extract("month", Income.date).label("month"),
-            Income.income_type,
-            func.sum(Income.amount).label("total"),
-        )
+        trend_query
         .group_by("year", "month", Income.income_type)
         .order_by("year", "month")
     )
@@ -153,7 +255,11 @@ async def income_analytics(
         elif inc_type == "Passive":
             trend_dict[k]["Passive"] += tot
             
-    sorted_keys = sorted(trend_dict.keys())[-6:]
+    if timeframe == "overall":
+        sorted_keys = sorted(trend_dict.keys())[-12:]
+    else:
+        sorted_keys = sorted(trend_dict.keys())[-6:]
+    
     monthly_trend = []
     active_vs_passive_trend = []
     
@@ -213,6 +319,9 @@ async def update_income(
         raise HTTPException(status_code=404, detail="Income not found")
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(income, key, value)
+    if body.date:
+        income.month = body.date.month
+        income.year = body.date.year
     await db.flush()
     await db.refresh(income)
     return income

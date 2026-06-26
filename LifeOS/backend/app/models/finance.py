@@ -62,7 +62,21 @@ class InvestmentType(str, enum.Enum):
 class IncomeCategory(str, enum.Enum):
     SALARY = "salary"
     FREELANCING = "freelancing"
+    CONSULTING = "consulting"
     BUSINESS = "business"
+    RENTAL_INCOME = "rental_income"
+    DIVIDEND = "dividend"
+    INTEREST = "interest"
+    MUTUAL_FUND = "mutual_fund"
+    STOCK_PROFIT = "stock_profit"
+    YOUTUBE = "youtube"
+    COURSE_SALES = "course_sales"
+    AFFILIATE_MARKETING = "affiliate_marketing"
+    ROYALTIES = "royalties"
+    PENSION = "pension"
+    CASHBACK = "cashback"
+    REFUND = "refund"
+    GIFT = "gift"
     INVESTMENTS = "investments"
     BONUS = "bonus"
     SIDE_INCOME = "side_income"
@@ -156,6 +170,8 @@ class Income(Base):
     income_type: Mapped[str] = mapped_column(String(20), default="Active")
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[Optional[str]] = mapped_column(Text)
+    month: Mapped[Optional[int]] = mapped_column(Integer)
+    year: Mapped[Optional[int]] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

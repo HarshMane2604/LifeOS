@@ -37,6 +37,7 @@ import api from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import CustomSelect from "@/components/ui/CustomSelect";
 import CustomDatePicker from "@/components/ui/CustomDatePicker";
+import DetailModal from "@/components/ui/DetailModal";
 
 interface Income {
   id: string;
@@ -78,14 +79,23 @@ const COLORS = [
 const CATEGORIES = [
   "salary",
   "freelancing",
+  "consulting",
   "business",
-  "investments",
-  "bonus",
-  "side_income",
+  "rental_income",
+  "dividend",
+  "interest",
+  "mutual_fund",
+  "stock_profit",
+  "youtube",
+  "course_sales",
+  "affiliate_marketing",
+  "royalties",
+  "pension",
+  "cashback",
+  "refund",
+  "gift",
   "other",
 ];
-
-
 
 const getIncomeIcon = (category: string) => {
   if (category === "salary")
@@ -117,7 +127,20 @@ export default function IncomePage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [activeDetailModal, setActiveDetailModal] = useState<string | null>(
+    null,
+  );
   const [overviewTimeframe, setOverviewTimeframe] = useState("this_month");
+
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    (currentDate.getMonth() + 1).toString(),
+  );
+  const [selectedYear, setSelectedYear] = useState<number>(
+    currentDate.getFullYear(),
+  );
+
   const [editing, setEditing] = useState<Income | null>(null);
   const [form, setForm] = useState({
     source: "",
@@ -132,9 +155,14 @@ export default function IncomePage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
+      const queryParams =
+        selectedMonth === "overall"
+          ? "?timeframe=overall"
+          : `?month=${selectedMonth}&year=${selectedYear}`;
+
       const [inc, ana] = await Promise.all([
-        api.get<Income[]>("/incomes"),
-        api.get<Analytics>("/incomes/analytics"),
+        api.get<Income[]>(`/incomes${queryParams}`),
+        api.get<Analytics>(`/incomes/analytics${queryParams}`),
       ]);
       setIncomes(inc);
       setAnalytics(ana);
@@ -147,7 +175,7 @@ export default function IncomePage() {
 
   useEffect(() => {
     fetchAll();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const openAdd = () => {
     setEditing(null);
@@ -225,8 +253,249 @@ export default function IncomePage() {
 
   const highestMonthDisplay = useMemo(() => {
     if (!a?.highest_month || !a.highest_month.month) return "N/A";
-    return `${MONTH_NAMES[a.highest_month.month - 1]} ${a.highest_month.year}`;
+    const fullMonths = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    return `in ${fullMonths[a.highest_month.month - 1]} ${a.highest_month.year}`;
   }, [a]);
+
+  const renderDetailModalContent = () => {
+    if (activeDetailModal === "total_income") {
+      const grouped = incomes.reduce(
+        (acc, curr) => {
+          acc[curr.source] = (acc[curr.source] || 0) + curr.amount;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {Object.entries(grouped).map(([source, amt], i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>{source}</span>
+              <span
+                className="font-mono-financial"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                {formatCurrency(amt)}
+              </span>
+            </div>
+          ))}
+          <hr style={{ borderColor: "var(--color-border)", margin: "8px 0" }} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontWeight: 700,
+              fontSize: 16,
+            }}
+          >
+            <span>Total</span>
+            <span className="font-mono-financial">
+              {formatCurrency(a?.total_this_month || 0)}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    if (activeDetailModal === "monthly_average") {
+      return (
+        <div style={{ textAlign: "center", paddingTop: 40 }}>
+          <p
+            style={{
+              fontSize: 16,
+              color: "var(--color-text-muted)",
+              marginBottom: 16,
+            }}
+          >
+            Monthly Average
+          </p>
+          <h2
+            style={{
+              fontSize: 40,
+              fontWeight: 700,
+              color: "var(--color-accent-cyan)",
+            }}
+          >
+            {formatCurrency(a?.monthly_average || 0)}
+          </h2>
+        </div>
+      );
+    }
+    if (activeDetailModal === "highest_month") {
+      return (
+        <div style={{ textAlign: "center", paddingTop: 40 }}>
+          <p
+            style={{
+              fontSize: 16,
+              color: "var(--color-text-muted)",
+              marginBottom: 16,
+            }}
+          >
+            The highest amount you earned was
+          </p>
+          <h2
+            style={{
+              fontSize: 40,
+              fontWeight: 700,
+              margin: "0",
+              color: "var(--color-accent-violet)",
+            }}
+          >
+            {formatCurrency(a?.highest_month?.total || 0)}
+          </h2>
+          <p
+            style={{
+              fontSize: 16,
+              color: "var(--color-text-muted)",
+              marginTop: 16,
+            }}
+          >
+            {highestMonthDisplay}
+          </p>
+        </div>
+      );
+    }
+    if (activeDetailModal === "active_sources") {
+      const activeIncomes = incomes.filter((i) => i.income_type === "Active");
+      const grouped = activeIncomes.reduce(
+        (acc, curr) => {
+          acc[curr.source] = (acc[curr.source] || 0) + curr.amount;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {Object.entries(grouped).map(([source, amt], i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>{source}</span>
+              <span
+                className="font-mono-financial"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                {formatCurrency(amt)}
+              </span>
+            </div>
+          ))}
+          {Object.keys(grouped).length === 0 && (
+            <p
+              style={{ textAlign: "center", color: "var(--color-text-muted)" }}
+            >
+              No active sources.
+            </p>
+          )}
+        </div>
+      );
+    }
+    if (activeDetailModal === "passive_income") {
+      const passiveIncomes = incomes.filter((i) => i.income_type === "Passive");
+      const grouped = passiveIncomes.reduce(
+        (acc, curr) => {
+          acc[curr.source] = (acc[curr.source] || 0) + curr.amount;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {Object.entries(grouped).map(([source, amt], i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>{source}</span>
+              <span
+                className="font-mono-financial"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                {formatCurrency(amt)}
+              </span>
+            </div>
+          ))}
+          {Object.keys(grouped).length === 0 && (
+            <p
+              style={{ textAlign: "center", color: "var(--color-text-muted)" }}
+            >
+              No passive sources.
+            </p>
+          )}
+          {Object.keys(grouped).length > 0 && (
+            <>
+              <hr
+                style={{ borderColor: "var(--color-border)", margin: "8px 0" }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontWeight: 700,
+                  fontSize: 16,
+                }}
+              >
+                <span>Total Passive Income</span>
+                <span className="font-mono-financial">
+                  {formatCurrency(a?.passive_income || 0)}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getModalTitle = () => {
+    switch (activeDetailModal) {
+      case "total_income":
+        return selectedMonth === "overall"
+          ? "Total Income"
+          : "Total This Month";
+      case "monthly_average":
+        return "Monthly Average";
+      case "highest_month":
+        return "Highest Month";
+      case "active_sources":
+        return "Active Sources";
+      case "passive_income":
+        return "Passive Income";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div
@@ -267,12 +536,19 @@ export default function IncomePage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <button
-            className="btn-secondary"
-            style={{ padding: "8px 16px", fontSize: 13 }}
-          >
-            <CalendarIcon size={14} /> 01 Jun 2026 - 23 Jun 2026
-          </button>
+          <div style={{ width: 140 }}>
+            <CustomSelect
+              value={selectedMonth}
+              onChange={(val) => setSelectedMonth(val)}
+              options={[
+                { value: "overall", label: "Overall" },
+                ...MONTH_NAMES.map((m, i) => ({
+                  value: (i + 1).toString(),
+                  label: `${m} ${selectedYear}`,
+                })),
+              ]}
+            />
+          </div>
           <button
             className="btn-secondary"
             style={{ padding: "8px 16px", fontSize: 13 }}
@@ -291,15 +567,20 @@ export default function IncomePage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* Metrics Row */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 16,
+          gap: 24,
+          marginBottom: 32,
         }}
       >
-        <div className="metric-card">
+        <div
+          className="metric-card"
+          onClick={() => setActiveDetailModal("total_income")}
+          style={{ cursor: "pointer", transition: "transform 0.2s" }}
+        >
           <div
             style={{
               display: "flex",
@@ -315,7 +596,9 @@ export default function IncomePage() {
                 fontWeight: 600,
               }}
             >
-              Total Income
+              {selectedMonth === "overall"
+                ? "Total Income"
+                : "Total This Month"}
             </p>
             <Briefcase size={18} color="var(--color-accent-emerald)" />
           </div>
@@ -345,7 +628,11 @@ export default function IncomePage() {
           </p>
         </div>
 
-        <div className="metric-card">
+        <div
+          className="metric-card"
+          onClick={() => setActiveDetailModal("monthly_average")}
+          style={{ cursor: "pointer", transition: "transform 0.2s" }}
+        >
           <div
             style={{
               display: "flex",
@@ -391,7 +678,11 @@ export default function IncomePage() {
           </p>
         </div>
 
-        <div className="metric-card">
+        <div
+          className="metric-card"
+          onClick={() => setActiveDetailModal("highest_month")}
+          style={{ cursor: "pointer", transition: "transform 0.2s" }}
+        >
           <div
             style={{
               display: "flex",
@@ -421,12 +712,24 @@ export default function IncomePage() {
           >
             {formatCurrency(a?.highest_month?.total || 0)}
           </h2>
-          <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-            {highestMonthDisplay}
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--color-text-primary)",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <CalendarIcon size={12} /> {highestMonthDisplay}
           </p>
         </div>
 
-        <div className="metric-card">
+        <div
+          className="metric-card"
+          onClick={() => setActiveDetailModal("active_sources")}
+          style={{ cursor: "pointer", transition: "transform 0.2s" }}
+        >
           <div
             style={{
               display: "flex",
@@ -461,7 +764,11 @@ export default function IncomePage() {
           </p>
         </div>
 
-        <div className="metric-card">
+        <div
+          className="metric-card"
+          onClick={() => setActiveDetailModal("passive_income")}
+          style={{ cursor: "pointer", transition: "transform 0.2s" }}
+        >
           <div
             style={{
               display: "flex",
@@ -608,7 +915,12 @@ export default function IncomePage() {
         {/* Income by Source Donut */}
         <div
           className="glass-card"
-          style={{ padding: 24, position: "relative", gridColumn: "span 1", minWidth: 0 }}
+          style={{
+            padding: 24,
+            position: "relative",
+            gridColumn: "span 1",
+            minWidth: 0,
+          }}
         >
           <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
             Income by Source
@@ -716,6 +1028,7 @@ export default function IncomePage() {
           </div>
           <div style={{ textAlign: "center", marginTop: 16 }}>
             <span
+              onClick={() => setShowCategoryModal(true)}
               style={{
                 fontSize: 12,
                 color: "var(--color-text-muted)",
@@ -1234,9 +1547,7 @@ export default function IncomePage() {
                     </label>
                     <CustomDatePicker
                       value={form.date}
-                      onChange={(val) =>
-                        setForm((f) => ({ ...f, date: val }))
-                      }
+                      onChange={(val) => setForm((f) => ({ ...f, date: val }))}
                     />
                   </div>
                 </div>
@@ -1262,7 +1573,8 @@ export default function IncomePage() {
                       label: c
                         .split("_")
                         .map(
-                          (word) => word.charAt(0).toUpperCase() + word.slice(1)
+                          (word) =>
+                            word.charAt(0).toUpperCase() + word.slice(1),
                         )
                         .join(" "),
                     }))}
@@ -1374,6 +1686,180 @@ export default function IncomePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Category Modal */}
+      <AnimatePresence>
+        {showCategoryModal && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowCategoryModal(false)}
+          >
+            <motion.div
+              className="modal-content"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ padding: 32, maxWidth: 400 }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 24,
+                }}
+              >
+                <h2 style={{ fontSize: 20, fontWeight: 700 }}>
+                  Income by Source
+                </h2>
+                <button
+                  onClick={() => setShowCategoryModal(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--color-text-muted)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div
+                style={{
+                  height: 180,
+                  position: "relative",
+                  display: "flex",
+                  justifyContent: "center",
+                  marginBottom: 24,
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={a?.by_source || []}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={75}
+                      paddingAngle={2}
+                      dataKey="total"
+                      stroke="none"
+                    >
+                      {(a?.by_source || []).map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        background: "var(--color-bg-tertiary)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-md)",
+                        fontSize: 12,
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center Label */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>
+                    {formatCurrency(a?.total_this_month || 0)}
+                  </div>
+                  <div
+                    style={{ fontSize: 10, color: "var(--color-text-muted)" }}
+                  >
+                    {selectedMonth === "overall"
+                      ? "Total Income"
+                      : "Total This Month"}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+              >
+                {(a?.by_source || []).map((s, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px",
+                      background: "var(--color-bg-secondary)",
+                      borderRadius: "var(--radius-md)",
+                    }}
+                  >
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <div
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: COLORS[i % COLORS.length],
+                        }}
+                      />
+                      <span
+                        style={{
+                          textTransform: "capitalize",
+                          fontWeight: 600,
+                          fontSize: 14,
+                        }}
+                      >
+                        {s.name.replace("_", " ")}
+                      </span>
+                    </div>
+                    <span
+                      className="font-mono-financial"
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--color-text-primary)",
+                      }}
+                    >
+                      {formatCurrency(s.total)}
+                    </span>
+                  </div>
+                ))}
+                {(!a?.by_source || a.by_source.length === 0) && (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      color: "var(--color-text-muted)",
+                    }}
+                  >
+                    No income sources found.
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <DetailModal
+        isOpen={!!activeDetailModal}
+        onClose={() => setActiveDetailModal(null)}
+        title={getModalTitle()}
+      >
+        {renderDetailModalContent()}
+      </DetailModal>
     </div>
   );
 }
