@@ -99,25 +99,87 @@ async def income_analytics(
         {"name": str(row[0]), "total": float(row[1])} for row in r.all()
     ]
 
-    # Monthly trend (last 12 months)
-    r = await db.execute(
+    # Active vs Passive logic
+    r_type = await db.execute(
+        select(
+            Income.income_type,
+            func.sum(Income.amount).label("total"),
+        )
+        .where(Income.date >= year_start)
+        .group_by(Income.income_type)
+    )
+    
+    active_total = 0.0
+    passive_total = 0.0
+    for row in r_type.all():
+        if row[0] == "Active":
+            active_total += float(row[1])
+        elif row[0] == "Passive":
+            passive_total += float(row[1])
+            
+    active_vs_passive = [
+        {"name": "Active", "total": active_total},
+        {"name": "Passive", "total": passive_total}
+    ]
+
+    # Active sources count
+    r_sources = await db.execute(
+        select(func.count(func.distinct(Income.source)))
+        .where(Income.income_type == "Active")
+    )
+    active_sources = r_sources.scalar() or 0
+
+    # Monthly trend & active/passive trend (last 6 months)
+    r_trend = await db.execute(
         select(
             extract("year", Income.date).label("year"),
             extract("month", Income.date).label("month"),
+            Income.income_type,
             func.sum(Income.amount).label("total"),
         )
-        .group_by("year", "month")
+        .group_by("year", "month", Income.income_type)
         .order_by("year", "month")
-        .limit(12)
     )
-    monthly_trend = [
-        {"year": int(row[0]), "month": int(row[1]), "total": float(row[2])}
-        for row in r.all()
-    ]
+    
+    trend_dict = {}
+    for row in r_trend.all():
+        y, m, inc_type, tot = int(row[0]), int(row[1]), str(row[2]), float(row[3])
+        k = (y, m)
+        if k not in trend_dict:
+            trend_dict[k] = {"total": 0.0, "Active": 0.0, "Passive": 0.0}
+        trend_dict[k]["total"] += tot
+        if inc_type == "Active":
+            trend_dict[k]["Active"] += tot
+        elif inc_type == "Passive":
+            trend_dict[k]["Passive"] += tot
+            
+    sorted_keys = sorted(trend_dict.keys())[-6:]
+    monthly_trend = []
+    active_vs_passive_trend = []
+    
+    for k in sorted_keys:
+        y, m = k
+        data = trend_dict[k]
+        monthly_trend.append({"year": y, "month": m, "total": data["total"]})
+        active_vs_passive_trend.append({
+            "year": y, 
+            "month": m, 
+            "Active": data["Active"], 
+            "Passive": data["Passive"]
+        })
+
+    highest_month = max(monthly_trend, key=lambda x: x["total"]) if monthly_trend else {}
+    monthly_average = sum(m["total"] for m in monthly_trend) / len(monthly_trend) if monthly_trend else 0.0
 
     return IncomeAnalytics(
         total_this_month=total_month,
         total_this_year=total_year,
+        monthly_average=monthly_average,
+        highest_month=highest_month,
+        active_sources=active_sources,
+        passive_income=passive_total,
+        active_vs_passive=active_vs_passive,
+        active_vs_passive_trend=active_vs_passive_trend,
         by_source=by_source,
         monthly_trend=monthly_trend,
     )

@@ -55,12 +55,14 @@ export default function AddDebtModal({
     try {
       setLoading(true);
       const payload: any = {
-        ...formData,
-        principal: parseFloat(formData.principal),
+        name: formData.name,
+        type: formData.type,
+        contact_info: formData.contact_info || null,
+        principal: parseFloat(formData.principal) || 0,
         current_balance: formData.current_balance
           ? parseFloat(formData.current_balance)
           : null,
-        interest_rate: parseFloat(formData.interest_rate),
+        interest_rate: formData.interest_rate ? parseFloat(formData.interest_rate) : 0,
         monthly_payment: noEmi
           ? 0
           : formData.monthly_payment

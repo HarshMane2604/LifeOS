@@ -71,6 +71,7 @@ class IncomeBase(BaseModel):
     amount: Decimal = Field(gt=0)
     date: date
     category: str = "salary"
+    income_type: str = "Active"
     is_recurring: bool = False
     notes: Optional[str] = None
 
@@ -84,6 +85,7 @@ class IncomeUpdate(BaseModel):
     amount: Optional[Decimal] = None
     date: Optional[date] = None
     category: Optional[str] = None
+    income_type: Optional[str] = None
     is_recurring: Optional[bool] = None
     notes: Optional[str] = None
 
@@ -277,6 +279,12 @@ class ExpenseAnalytics(BaseModel):
 class IncomeAnalytics(BaseModel):
     total_this_month: Decimal = Decimal("0")
     total_this_year: Decimal = Decimal("0")
+    monthly_average: Decimal = Decimal("0")
+    highest_month: dict = {}
+    active_sources: int = 0
+    passive_income: Decimal = Decimal("0")
+    active_vs_passive: list[dict] = []
+    active_vs_passive_trend: list[dict] = []
     by_source: list[dict] = []
     monthly_trend: list[dict] = []
 

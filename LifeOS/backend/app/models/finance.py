@@ -153,6 +153,7 @@ class Income(Base):
     category: Mapped[IncomeCategory] = mapped_column(
         SAEnum(IncomeCategory), default=IncomeCategory.SALARY
     )
+    income_type: Mapped[str] = mapped_column(String(20), default="Active")
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(

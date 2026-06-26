@@ -62,10 +62,13 @@ export default function CustomDatePicker({
 
   // Set current month to the selected date when opened
   useEffect(() => {
-    if (isOpen && dateValue && isValid(dateValue)) {
-      setCurrentMonth(dateValue);
+    if (isOpen && value) {
+      const parsed = parseISO(value);
+      if (isValid(parsed)) {
+        setCurrentMonth(parsed);
+      }
     }
-  }, [isOpen, dateValue]);
+  }, [isOpen, value]);
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
