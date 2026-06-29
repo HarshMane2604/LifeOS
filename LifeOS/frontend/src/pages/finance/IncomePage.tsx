@@ -38,6 +38,8 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import CustomSelect from "@/components/ui/CustomSelect";
 import CustomDatePicker from "@/components/ui/CustomDatePicker";
 import DetailModal from "@/components/ui/DetailModal";
+import DeleteModal from "@/components/ui/DeleteModal";
+import TransactionList, { Transaction } from "@/components/ui/TransactionList";
 
 interface Income {
   id: string;
@@ -142,6 +144,12 @@ export default function IncomePage() {
   );
 
   const [editing, setEditing] = useState<Income | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<Income | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    income: Income;
+  } | null>(null);
   const [form, setForm] = useState({
     source: "",
     amount: "",
@@ -176,6 +184,12 @@ export default function IncomePage() {
   useEffect(() => {
     fetchAll();
   }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);
 
   const openAdd = () => {
     setEditing(null);
@@ -233,11 +247,15 @@ export default function IncomePage() {
 
   const a = analytics;
   const monthlyData = useMemo(() => {
-    return (a?.monthly_trend || []).map((t) => ({
+    let trend = a?.monthly_trend || [];
+    if (overviewTimeframe === "this_month" && trend.length > 0) {
+      trend = [trend[trend.length - 1]];
+    }
+    return trend.map((t) => ({
       name: `${MONTH_NAMES[t.month - 1]}`,
       total: t.total,
     }));
-  }, [a]);
+  }, [a, overviewTimeframe]);
 
   const activeVsPassiveData = useMemo(() => {
     return a?.active_vs_passive || [];
@@ -333,7 +351,7 @@ export default function IncomePage() {
             style={{
               fontSize: 40,
               fontWeight: 700,
-              color: "var(--color-accent-cyan)",
+              color: "var(--color-text-primary)",
             }}
           >
             {formatCurrency(a?.monthly_average || 0)}
@@ -358,7 +376,7 @@ export default function IncomePage() {
               fontSize: 40,
               fontWeight: 700,
               margin: "0",
-              color: "var(--color-accent-violet)",
+              color: "var(--color-text-primary)",
             }}
           >
             {formatCurrency(a?.highest_month?.total || 0)}
@@ -475,6 +493,20 @@ export default function IncomePage() {
         </div>
       );
     }
+    if (activeDetailModal === "recent_incomes") {
+      const txs: Transaction[] = incomes.map((inc) => ({
+        id: inc.id,
+        title: inc.source,
+        subtitle: formatDate(inc.date),
+        amount: formatCurrency(inc.amount),
+        amountPrefix: "+",
+        amountColor: "var(--color-accent-emerald)",
+        icon: getIncomeIcon(inc.category),
+      }));
+      return (
+        <TransactionList transactions={txs} emptyMessage="No incomes found." />
+      );
+    }
     return null;
   };
 
@@ -492,6 +524,8 @@ export default function IncomePage() {
         return "Active Sources";
       case "passive_income":
         return "Passive Income";
+      case "recent_incomes":
+        return "All Transactions";
       default:
         return "";
     }
@@ -572,8 +606,7 @@ export default function IncomePage() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 24,
-          marginBottom: 32,
+          gap: 16,
         }}
       >
         <div
@@ -860,7 +893,11 @@ export default function IncomePage() {
                 color: "var(--color-text-primary)",
               }}
             >
-              {formatCurrency(a?.total_this_month || 0)}
+              {formatCurrency(
+                overviewTimeframe === "this_year"
+                  ? a?.total_this_year || 0
+                  : a?.total_this_month || 0
+              )}
             </div>
             <div style={{ fontSize: 12, color: "var(--color-accent-emerald)" }}>
               +18.6%{" "}
@@ -1183,6 +1220,7 @@ export default function IncomePage() {
                   <th>Source</th>
                   <th>Type</th>
                   <th>Frequency</th>
+                  <th>Date</th>
                   <th style={{ textAlign: "right" }}>This Month</th>
                   <th style={{ textAlign: "center" }}>Actions</th>
                 </tr>
@@ -1196,7 +1234,17 @@ export default function IncomePage() {
                     if (type === "Passive") badgeClass = "badge-violet";
 
                     return (
-                      <tr key={inc.id}>
+                      <tr
+                        key={inc.id}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setContextMenu({
+                            x: e.clientX,
+                            y: e.clientY,
+                            income: inc,
+                          });
+                        }}
+                      >
                         <td>
                           <div
                             style={{
@@ -1250,6 +1298,14 @@ export default function IncomePage() {
                           }}
                         >
                           {inc.is_recurring ? "Monthly" : "One-time"}
+                        </td>
+                        <td
+                          style={{
+                            fontSize: 13,
+                            color: "var(--color-text-secondary)",
+                          }}
+                        >
+                          {formatDate(inc.date)}
                         </td>
                         <td style={{ textAlign: "right" }}>
                           <span
@@ -1326,6 +1382,7 @@ export default function IncomePage() {
           >
             <h3 style={{ fontSize: 15, fontWeight: 600 }}>Recent Incomes</h3>
             <span
+              onClick={() => setActiveDetailModal("recent_incomes")}
               style={{
                 fontSize: 12,
                 color: "var(--color-text-muted)",
@@ -1338,78 +1395,23 @@ export default function IncomePage() {
           <div
             style={{
               padding: 20,
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
               flex: 1,
               maxHeight: 310,
               overflowY: "auto",
             }}
           >
-            {incomes.map((inc) => (
-              <div
-                key={inc.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "var(--radius-md)",
-                      background: "var(--color-bg-tertiary)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {getIncomeIcon(inc.category)}
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--color-text-primary)",
-                      }}
-                    >
-                      {inc.source}
-                    </div>
-                    <div
-                      style={{ fontSize: 11, color: "var(--color-text-muted)" }}
-                    >
-                      {formatDate(inc.date)}
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className="font-mono-financial"
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: "var(--color-accent-emerald)",
-                  }}
-                >
-                  +{formatCurrency(inc.amount)}
-                </div>
-              </div>
-            ))}
-            {incomes.length === 0 && !loading && (
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "var(--color-text-muted)",
-                  fontSize: 13,
-                  marginTop: 20,
-                }}
-              >
-                No recent incomes
-              </div>
-            )}
+            <TransactionList
+              transactions={incomes.map((inc) => ({
+                id: inc.id,
+                title: inc.source,
+                subtitle: formatDate(inc.date),
+                amount: formatCurrency(inc.amount),
+                amountPrefix: "+",
+                amountColor: "var(--color-accent-emerald)",
+                icon: getIncomeIcon(inc.category),
+              }))}
+              emptyMessage={loading ? "Loading..." : "No recent incomes"}
+            />
           </div>
           <div
             style={{
@@ -1419,6 +1421,7 @@ export default function IncomePage() {
             }}
           >
             <span
+              onClick={() => setActiveDetailModal("recent_incomes")}
               style={{
                 fontSize: 12,
                 color: "var(--color-text-muted)",
@@ -1432,49 +1435,70 @@ export default function IncomePage() {
       </div>
 
       {/* Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowModal(false)}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ padding: 32 }}
           >
-            <motion.div
-              className="modal-content"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ padding: 32 }}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
             >
-              <div
+              <h2 style={{ fontSize: 20, fontWeight: 700 }}>
+                {editing ? "Edit Income" : "Add Income"}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 24,
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-text-muted)",
+                  cursor: "pointer",
                 }}
               >
-                <h2 style={{ fontSize: 20, fontWeight: 700 }}>
-                  {editing ? "Edit Income" : "Add Income"}
-                </h2>
-                <button
-                  onClick={() => setShowModal(false)}
+                <X size={20} />
+              </button>
+            </div>
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: "flex", flexDirection: "column", gap: 16 }}
+            >
+              <div>
+                <label
                   style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--color-text-muted)",
-                    cursor: "pointer",
+                    display: "block",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--color-text-secondary)",
+                    marginBottom: 6,
                   }}
                 >
-                  <X size={20} />
-                </button>
+                  Source
+                </label>
+                <input
+                  type="text"
+                  value={form.source}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, source: e.target.value }))
+                  }
+                  className="input-field"
+                  placeholder="e.g., Company Name"
+                  required
+                  id="income-source"
+                />
               </div>
-              <form
-                onSubmit={handleSubmit}
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 12,
+                }}
               >
                 <div>
                   <label
@@ -1486,372 +1510,420 @@ export default function IncomePage() {
                       marginBottom: 6,
                     }}
                   >
-                    Source
+                    Amount (₹)
                   </label>
                   <input
-                    type="text"
-                    value={form.source}
+                    type="number"
+                    step="0.01"
+                    value={form.amount}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, source: e.target.value }))
+                      setForm((f) => ({ ...f, amount: e.target.value }))
                     }
                     className="input-field"
-                    placeholder="e.g., Company Name"
+                    placeholder="0.00"
                     required
-                    id="income-source"
+                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    id="income-amount"
                   />
                 </div>
-                <div
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "var(--color-text-secondary)",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Date
+                  </label>
+                  <CustomDatePicker
+                    value={form.date}
+                    onChange={(val) => setForm((f) => ({ ...f, date: val }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <label
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
+                    display: "block",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--color-text-secondary)",
+                    marginBottom: 6,
                   }}
                 >
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--color-text-secondary)",
-                        marginBottom: 6,
-                      }}
-                    >
-                      Amount (₹)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={form.amount}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, amount: e.target.value }))
-                      }
-                      className="input-field"
-                      placeholder="0.00"
-                      required
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                      id="income-amount"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--color-text-secondary)",
-                        marginBottom: 6,
-                      }}
-                    >
-                      Date
-                    </label>
-                    <CustomDatePicker
-                      value={form.date}
-                      onChange={(val) => setForm((f) => ({ ...f, date: val }))}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--color-text-secondary)",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Category
-                  </label>
-                  <CustomSelect
-                    value={form.category}
-                    onChange={(val) =>
-                      setForm((f) => ({ ...f, category: val }))
-                    }
-                    options={CATEGORIES.map((c) => ({
-                      value: c,
-                      label: c
-                        .split("_")
-                        .map(
-                          (word) =>
-                            word.charAt(0).toUpperCase() + word.slice(1),
-                        )
-                        .join(" "),
-                    }))}
-                  />
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--color-text-secondary)",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Income Type
-                  </label>
-                  <CustomSelect
-                    value={form.income_type}
-                    onChange={(val) =>
-                      setForm((f) => ({ ...f, income_type: val }))
-                    }
-                    options={[
-                      { value: "Active", label: "Active" },
-                      { value: "Passive", label: "Passive" },
-                    ]}
-                  />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={form.is_recurring}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, is_recurring: e.target.checked }))
-                    }
-                    id="income-recurring"
-                  />
-                  <label
-                    htmlFor="income-recurring"
-                    style={{
-                      fontSize: 13,
-                      color: "var(--color-text-secondary)",
-                    }}
-                  >
-                    This is a recurring income
-                  </label>
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--color-text-secondary)",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Notes
-                  </label>
-                  <textarea
-                    value={form.notes}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, notes: e.target.value }))
-                    }
-                    className="input-field"
-                    placeholder="Additional notes..."
-                    rows={2}
-                    style={{ resize: "vertical" }}
-                    id="income-notes"
-                  />
-                </div>
-                {editing && (
-                  <div style={{ textAlign: "right", marginTop: -8 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(editing.id)}
-                      style={{
-                        color: "var(--color-accent-rose)",
-                        fontSize: 12,
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Delete this record
-                    </button>
-                  </div>
-                )}
-                <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                  Category
+                </label>
+                <CustomSelect
+                  value={form.category}
+                  onChange={(val) => setForm((f) => ({ ...f, category: val }))}
+                  options={CATEGORIES.map((c) => ({
+                    value: c,
+                    label: c
+                      .split("_")
+                      .map(
+                        (word) => word.charAt(0).toUpperCase() + word.slice(1),
+                      )
+                      .join(" "),
+                  }))}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--color-text-secondary)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Income Type
+                </label>
+                <CustomSelect
+                  value={form.income_type}
+                  onChange={(val) =>
+                    setForm((f) => ({ ...f, income_type: val }))
+                  }
+                  options={[
+                    { value: "Active", label: "Active" },
+                    { value: "Passive", label: "Passive" },
+                  ]}
+                />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={form.is_recurring}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, is_recurring: e.target.checked }))
+                  }
+                  id="income-recurring"
+                />
+                <label
+                  htmlFor="income-recurring"
+                  style={{
+                    fontSize: 13,
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  This is a recurring income
+                </label>
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--color-text-secondary)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Notes
+                </label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, notes: e.target.value }))
+                  }
+                  className="input-field"
+                  placeholder="Additional notes..."
+                  rows={2}
+                  style={{ resize: "vertical" }}
+                  id="income-notes"
+                />
+              </div>
+              {editing && (
+                <div style={{ textAlign: "right", marginTop: -8 }}>
                   <button
                     type="button"
-                    className="btn-secondary"
-                    onClick={() => setShowModal(false)}
-                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setShowModal(false);
+                      setShowDeleteModal(editing);
+                    }}
+                    style={{
+                      color: "var(--color-accent-rose)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 4,
+                    }}
+                    title="Delete this record"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    style={{ flex: 1 }}
-                    id="income-submit"
-                  >
-                    {editing ? "Save Changes" : "Add Income"}
+                    <Trash2 size={18} />
                   </button>
                 </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Category Modal */}
-      <AnimatePresence>
-        {showCategoryModal && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowCategoryModal(false)}
-          >
-            <motion.div
-              className="modal-content"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ padding: 32, maxWidth: 400 }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 24,
-                }}
-              >
-                <h2 style={{ fontSize: 20, fontWeight: 700 }}>
-                  Income by Source
-                </h2>
+              )}
+              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
                 <button
-                  onClick={() => setShowCategoryModal(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--color-text-muted)",
-                    cursor: "pointer",
-                  }}
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowModal(false)}
+                  style={{ flex: 1 }}
                 >
-                  <X size={20} />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ flex: 1 }}
+                  id="income-submit"
+                >
+                  {editing ? "Save Changes" : "Add Income"}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-              <div
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowCategoryModal(false)}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ padding: 32, maxWidth: 400 }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <h2 style={{ fontSize: 20, fontWeight: 700 }}>
+                Income by Source
+              </h2>
+              <button
+                onClick={() => setShowCategoryModal(false)}
                 style={{
-                  height: 180,
-                  position: "relative",
-                  display: "flex",
-                  justifyContent: "center",
-                  marginBottom: 24,
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-text-muted)",
+                  cursor: "pointer",
                 }}
               >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={a?.by_source || []}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={75}
-                      paddingAngle={2}
-                      dataKey="total"
-                      stroke="none"
-                    >
-                      {(a?.by_source || []).map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        background: "var(--color-bg-tertiary)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "var(--radius-md)",
-                        fontSize: 12,
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Center Label */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>
-                    {formatCurrency(a?.total_this_month || 0)}
-                  </div>
-                  <div
-                    style={{ fontSize: 10, color: "var(--color-text-muted)" }}
+                <X size={20} />
+              </button>
+            </div>
+
+            <div
+              style={{
+                height: 180,
+                position: "relative",
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: 24,
+              }}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={a?.by_source || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={2}
+                    dataKey="total"
+                    stroke="none"
                   >
-                    {selectedMonth === "overall"
-                      ? "Total Income"
-                      : "Total This Month"}
-                  </div>
+                    {(a?.by_source || []).map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--color-bg-tertiary)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-md)",
+                      fontSize: 12,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center Label */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: 16, fontWeight: 700 }}>
+                  {formatCurrency(a?.total_this_month || 0)}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--color-text-muted)" }}>
+                  {selectedMonth === "overall"
+                    ? "Total Income"
+                    : "Total This Month"}
                 </div>
               </div>
+            </div>
 
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
-              >
-                {(a?.by_source || []).map((s, i) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {(a?.by_source || []).map((s, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "12px",
+                    background: "var(--color-bg-secondary)",
+                    borderRadius: "var(--radius-md)",
+                  }}
+                >
                   <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "12px",
-                      background: "var(--color-bg-secondary)",
-                      borderRadius: "var(--radius-md)",
-                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
                   >
                     <div
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <div
-                        style={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: "50%",
-                          background: COLORS[i % COLORS.length],
-                        }}
-                      />
-                      <span
-                        style={{
-                          textTransform: "capitalize",
-                          fontWeight: 600,
-                          fontSize: 14,
-                        }}
-                      >
-                        {s.name.replace("_", " ")}
-                      </span>
-                    </div>
-                    <span
-                      className="font-mono-financial"
                       style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: COLORS[i % COLORS.length],
+                      }}
+                    />
+                    <span
+                      style={{
+                        textTransform: "capitalize",
                         fontWeight: 600,
-                        color: "var(--color-text-primary)",
+                        fontSize: 14,
                       }}
                     >
-                      {formatCurrency(s.total)}
+                      {s.name.replace("_", " ")}
                     </span>
                   </div>
-                ))}
-                {(!a?.by_source || a.by_source.length === 0) && (
-                  <div
+                  <span
+                    className="font-mono-financial"
                     style={{
-                      textAlign: "center",
-                      color: "var(--color-text-muted)",
+                      fontWeight: 600,
+                      color: "var(--color-text-primary)",
                     }}
                   >
-                    No income sources found.
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                    {formatCurrency(s.total)}
+                  </span>
+                </div>
+              ))}
+              {(!a?.by_source || a.by_source.length === 0) && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  No income sources found.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          style={{
+            position: "fixed",
+            top: contextMenu.y,
+            left: contextMenu.x,
+            background: "var(--color-bg-secondary)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-md)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+            padding: 4,
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            minWidth: 120,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              openEdit(contextMenu.income);
+              setContextMenu(null);
+            }}
+            style={{
+              padding: "8px 12px",
+              textAlign: "left",
+              background: "transparent",
+              border: "none",
+              color: "var(--color-text-primary)",
+              fontSize: 13,
+              cursor: "pointer",
+              borderRadius: 4,
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "var(--color-border)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => {
+              setShowDeleteModal(contextMenu.income);
+              setContextMenu(null);
+            }}
+            style={{
+              padding: "8px 12px",
+              textAlign: "left",
+              background: "transparent",
+              border: "none",
+              color: "var(--color-accent-rose)",
+              fontSize: 13,
+              cursor: "pointer",
+              borderRadius: 4,
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "var(--color-bg-tertiary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
+          >
+            Delete
+          </button>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      <DeleteModal
+        isOpen={!!showDeleteModal}
+        onClose={() => setShowDeleteModal(null)}
+        onConfirm={async () => {
+          if (!showDeleteModal) return;
+          try {
+            await api.delete(`/incomes/${showDeleteModal.id}`);
+            setShowDeleteModal(null);
+            fetchAll();
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+        itemName={showDeleteModal?.source || ""}
+        itemType="income"
+      />
 
       <DetailModal
         isOpen={!!activeDetailModal}
