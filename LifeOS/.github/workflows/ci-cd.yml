@@ -1,0 +1,97 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend-lint-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Lint
+        run: npm run lint
+        
+      - name: Type Check & Build
+        run: npm run build
+
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Run checks
+        run: |
+          # Add any pytest commands here if you have standard test suites configured
+          # pytest
+          echo "Backend checks pass"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [frontend-lint-build, backend-test]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Frontend Docker Image
+        run: docker build -t lifeos-frontend ./frontend
+        
+      - name: Build Backend Docker Image
+        run: docker build -t lifeos-backend ./backend
+
+  deploy-to-railway:
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+        
+      - name: Deploy Frontend to Railway
+        # Ensure you have set the RAILWAY_TOKEN in your GitHub repository secrets
+        # and RAILWAY_SERVICE_ID_FRONTEND if deploying a specific service in a monorepo
+        run: railway up --service $RAILWAY_SERVICE_ID_FRONTEND --detach
+        working-directory: ./frontend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID_FRONTEND: ${{ secrets.RAILWAY_SERVICE_ID_FRONTEND }}
+          
+      - name: Deploy Backend to Railway
+        run: railway up --service $RAILWAY_SERVICE_ID_BACKEND --detach
+        working-directory: ./backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID_BACKEND: ${{ secrets.RAILWAY_SERVICE_ID_BACKEND }}

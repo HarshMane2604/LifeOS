@@ -14,5 +14,30 @@ services:
       - lifeos_pgdata:/var/lib/postgresql/data
     restart: unless-stopped
 
+  backend:
+    build:
+      context: ./backend
+    container_name: lifeos-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/lifeos
+      - SECRET_KEY=development-secret-key
+      - ACCESS_KEYWORD=Harsh
+      - FRONTEND_URL=http://localhost:5173
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: lifeos-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   lifeos_pgdata:
