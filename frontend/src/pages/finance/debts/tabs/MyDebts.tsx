@@ -8,7 +8,7 @@ import { Pencil, Trash2 } from 'lucide-react';
    
    
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function MyDebts({ debts, loading, _onRefresh }: { debts: unknown[]; loading: boolean; _onRefresh: () => void }) {
+export default function MyDebts({ debts, loading, _onRefresh }: { debts: any[]; loading: boolean; _onRefresh: () => void }) {
   if (loading) return <div>Loading...</div>;
 
   const activeDebts = debts.filter(d => d.status === 'active' && !['lent', 'borrowed'].includes(d.type));

@@ -99,7 +99,7 @@ export default function RecordEMIModal({
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            {eventsOnDate.map((event: unknown, i: number) => {
+            {eventsOnDate.map((event: any, i: number) => {
               const debt = activeDebts.find((d) => d.id === event.debt_id);
               return (
                 <div

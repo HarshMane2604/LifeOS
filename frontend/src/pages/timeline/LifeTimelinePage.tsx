@@ -5,7 +5,7 @@ import { Flag, Plus, ArrowRight } from 'lucide-react';
 import api from '@/lib/api';
 import { LifeGoal, GoalHorizon } from '@/types/life';
 
-const HORIZONS: { value: GoalHorizon; label: string; yearOffset: number } = [
+const HORIZONS: { value: GoalHorizon; label: string; yearOffset: number }[] = [
   { value: '1y', label: '1-Year Horizon', yearOffset: 1 },
   { value: '3y', label: '3-Year Horizon', yearOffset: 3 },
   { value: '5y', label: '5-Year Horizon', yearOffset: 5 },

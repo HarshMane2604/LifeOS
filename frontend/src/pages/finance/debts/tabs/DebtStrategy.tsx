@@ -62,7 +62,7 @@ export default function DebtStrategy() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            {currentPlan.map((d: unknown, i: number) => (
+            {currentPlan.map((d: any, i: number) => (
               <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'var(--color-bg-secondary)', padding: 16, borderRadius: 'var(--radius-md)' }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-accent-violet-glow)', color: 'var(--color-accent-violet)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>
                   {i + 1}

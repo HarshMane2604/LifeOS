@@ -108,7 +108,7 @@ function Flow({ initialData, onSave }: MainCanvasProps) {
   );
 
   const onPaneContextMenu = useCallback(
-    (event: React.MouseEvent) => {
+    (event: any) => {
       event.preventDefault();
 
       const bounds = reactFlowWrapper.current?.getBoundingClientRect();

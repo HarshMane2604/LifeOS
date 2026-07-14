@@ -739,7 +739,7 @@ export default function DebtsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                {currentPlan.map((d: unknown, i: number) => (
+                {currentPlan.map((d: any, i: number) => (
                   <div
                     key={d.id}
                     style={{ display: "flex", alignItems: "center", gap: 12 }}

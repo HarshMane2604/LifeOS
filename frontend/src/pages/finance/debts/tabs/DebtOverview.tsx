@@ -69,7 +69,7 @@ export default function DebtOverview({ debts, loading }: { debts: any[]; loading
                   </Pie>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip formatter={(value: any) => formatCurrency(value)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

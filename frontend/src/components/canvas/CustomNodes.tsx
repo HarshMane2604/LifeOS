@@ -552,7 +552,7 @@ export function HexagonNode({ id, _data, selected }: any) {
    
    
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function DividerNode({ id, _data, selected }: { id: string; _data: unknown; selected: boolean }) {
+export function DividerNode({ id, data, selected }: any) {
   const color = 'var(--color-text-muted)';
   return (
     <div style={{
