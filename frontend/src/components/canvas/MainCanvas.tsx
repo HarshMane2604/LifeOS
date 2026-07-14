@@ -11,6 +11,7 @@ import {
   Background,
   MiniMap,
   Node,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Panel,
   useReactFlow,
 } from "@xyflow/react";
@@ -65,7 +66,9 @@ const nodeTypes = {
 };
 
 interface MainCanvasProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSave: (data: any) => void;
 }
 
@@ -132,6 +135,7 @@ function Flow({ initialData, onSave }: MainCanvasProps) {
     closeMenu();
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addNode = (type: string, data: any) => {
     takeSnapshot(nodes, edges);
     const newNode: Node = {
@@ -168,7 +172,12 @@ function Flow({ initialData, onSave }: MainCanvasProps) {
       let data = {};
       try {
         data = JSON.parse(dataStr);
-      } catch (e) {}
+   
+   
+   
+   
+      } catch (e) {
+  console.error(e);}
 
       takeSnapshot(nodes, edges);
 

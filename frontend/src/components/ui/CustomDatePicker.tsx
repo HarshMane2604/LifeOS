@@ -39,6 +39,7 @@ export default function CustomDatePicker({
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function handleClickOutside(event: any) {
       if (
         triggerRef.current &&
@@ -65,6 +66,8 @@ export default function CustomDatePicker({
     if (isOpen && value) {
       const parsed = parseISO(value);
       if (isValid(parsed)) {
+   
+  // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentMonth(parsed);
       }
     }

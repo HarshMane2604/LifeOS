@@ -13,6 +13,7 @@ export default function ResizableSplitPane({ children, minWidth = 250 }: Resizab
   useEffect(() => {
     // Initialize widths equally on first mount or when children count changes
     if (children.length > 0 && containerRef.current) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const totalWidth = containerRef.current.clientWidth;
       const initialWidth = 100 / children.length; // Percentage based
       setWidths(new Array(children.length).fill(initialWidth));

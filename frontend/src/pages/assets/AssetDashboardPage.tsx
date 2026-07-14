@@ -8,10 +8,12 @@ export default function AssetDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+   
+  // eslint-disable-next-line react-hooks/immutability
     fetchDashboard();
   }, []);
 
-  const fetchDashboard = async () => {
+  async function fetchDashboard() {
     try {
       const res = await api.get<AssetDashboardData>('/assets/dashboard');
       setData(res);

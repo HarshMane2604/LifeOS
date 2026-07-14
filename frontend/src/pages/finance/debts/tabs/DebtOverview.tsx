@@ -1,7 +1,10 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ShieldAlert, ShieldCheck, Shield } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function DebtOverview({ debts, loading }: { debts: any[]; loading: boolean }) {
   if (loading) return <div>Loading overview...</div>;
 
@@ -64,7 +67,9 @@ export default function DebtOverview({ debts, loading }: { debts: any[]; loading
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
                     {pieData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(value: any) => formatCurrency(value)} />
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

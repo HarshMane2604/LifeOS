@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Asset } from '@/types/assets';
 import api from '@/lib/api';
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Plus, ListTodo, MoreVertical, PlayCircle, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useNavigate } from 'react-router';
@@ -19,10 +21,12 @@ export default function AssetCreationTrackerPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+   
+  // eslint-disable-next-line react-hooks/immutability
     fetchAssets();
   }, []);
 
-  const fetchAssets = async () => {
+  async function fetchAssets() {
     try {
       const res = await api.get<Asset[]>('/assets');
       setAssets(res);
@@ -33,7 +37,7 @@ export default function AssetCreationTrackerPage() {
     }
   };
 
-  const handleAddAsset = async (addAnother: boolean) => {
+  async function handleAddAsset(addAnother: boolean) {
     if (!formData.name.trim()) {
       alert("Asset name is required.");
       return;

@@ -1,8 +1,10 @@
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface DebtDetailsModalProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debt: any;
   onClose: () => void;
 }

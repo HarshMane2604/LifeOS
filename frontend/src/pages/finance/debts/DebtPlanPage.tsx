@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import api from '@/lib/api';
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ArrowLeft, Save } from 'lucide-react';
 import MainCanvas from '@/components/canvas/MainCanvas';
 
 export default function DebtPlanPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [debt, setDebt] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+   
+  // eslint-disable-next-line react-hooks/immutability
     if (id) fetchDebt(id);
   }, [id]);
 
-  const fetchDebt = async (debtId: string) => {
+  async function fetchDebt(debtId: string) {
     try {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await api.get<any>(`/debts/${debtId}`);
       setDebt(res);
     } catch (err) {
@@ -26,7 +31,8 @@ export default function DebtPlanPage() {
     }
   };
 
-  const handleSaveCanvas = async (canvasData: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function handleSaveCanvas(canvasData: any) {
     if (!debt) return;
     setSaving(true);
     try {

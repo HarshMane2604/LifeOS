@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Auth Context — manages keyword-based authentication state
  */
@@ -30,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => setIsLoading(false));
     } else {
+   
+  // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
   }, []);

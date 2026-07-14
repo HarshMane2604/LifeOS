@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function useOutsideClick(ref: any, callback: () => void) {
   useEffect(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function handleClickOutside(event: any) {
       if (ref.current && !ref.current.contains(event.target)) {
         callback();

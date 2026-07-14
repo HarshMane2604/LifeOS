@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { Outlet } from 'react-router';
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { motion } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';

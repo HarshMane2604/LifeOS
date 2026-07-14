@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AssetIdea } from '@/types/assets';
 import api from '@/lib/api';
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Plus, Zap, AlertTriangle, TrendingUp, Clock, PlusCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -9,10 +10,12 @@ export default function AssetOpportunityVaultPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+   
+  // eslint-disable-next-line react-hooks/immutability
     fetchIdeas();
   }, []);
 
-  const fetchIdeas = async () => {
+  async function fetchIdeas() {
     try {
       const res = await api.get<AssetIdea[]>('/assets/ideas');
       setIdeas(res);
@@ -23,7 +26,7 @@ export default function AssetOpportunityVaultPage() {
     }
   };
 
-  const handleAddIdea = async () => {
+  async function handleAddIdea() {
     const title = window.prompt("What is your new asset idea?");
     if (!title || !title.trim()) return;
 

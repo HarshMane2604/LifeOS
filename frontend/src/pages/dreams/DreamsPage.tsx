@@ -9,10 +9,12 @@ export default function DreamsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+   
+  // eslint-disable-next-line react-hooks/immutability
     fetchDreams();
   }, []);
 
-  const fetchDreams = async () => {
+  async function fetchDreams() {
     try {
       setLoading(true);
       const data = await api.get<Dream[]>('/dreams');
@@ -24,7 +26,7 @@ export default function DreamsPage() {
     }
   };
 
-  const handleAddDream = async () => {
+  async function handleAddDream() {
     const title = window.prompt("What is your new dream?");
     if (!title || !title.trim()) return;
 

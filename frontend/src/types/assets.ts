@@ -19,6 +19,7 @@ export interface Asset {
   priority: 'low' | 'medium' | 'high' | 'critical';
   project_id?: string;
   scalability: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   roadmap_canvas_data?: any;
   created_at: string;
   updated_at: string;

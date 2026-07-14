@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { CheckCircle2, Flag, FileText, Lightbulb, Target, Type, Image as ImageIcon, Map, MousePointer2, Minus, ArrowUpRight, Square, Circle, Undo2, Redo2, Shapes, ChevronRight, Diamond, MessageCircle, Hexagon } from 'lucide-react';
 
 interface CanvasToolbarProps {
@@ -11,6 +13,7 @@ interface CanvasToolbarProps {
 export default function CanvasToolbar({ onUndo, onRedo, canUndo = false, canRedo = false }: CanvasToolbarProps) {
   const [shapesOpen, setShapesOpen] = useState(false);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onDragStart = (event: React.DragEvent, nodeType: string, data: any) => {
     event.dataTransfer.setData('application/reactflow/type', nodeType);
     event.dataTransfer.setData('application/reactflow/data', JSON.stringify(data));

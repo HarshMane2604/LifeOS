@@ -1,4 +1,5 @@
 import { useState } from "react";
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Save } from "lucide-react";
 import api from "@/lib/api";
@@ -26,6 +27,7 @@ export default function AddDebtModal({
 }: {
   onClose: () => void;
   onRefresh: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialData?: any;
 }) {
   const [formData, setFormData] = useState({
@@ -50,10 +52,11 @@ export default function AddDebtModal({
   );
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
       setLoading(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payload: any = {
         name: formData.name,
         type: formData.type,

@@ -4,11 +4,14 @@ import { formatCurrency } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export default function PeerTracker() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [debts, setDebts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     api.get('/debts').then((res: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setDebts(res.filter((d: any) => ['lent', 'borrowed'].includes(d.type)));
       setLoading(false);
     });

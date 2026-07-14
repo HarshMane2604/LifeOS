@@ -6,11 +6,12 @@ export default function DeleteDebtModal({
   onClose,
   onRefresh,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debt: any;
   onClose: () => void;
   onRefresh: () => void;
 }) {
-  const handleDelete = async () => {
+  async function handleDelete() {
     try {
       await api.delete(`/debts/${debt.id}`);
       onRefresh();

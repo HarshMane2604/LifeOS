@@ -25,7 +25,7 @@ export default function FinancialGoalsPage() {
     fetchGoals();
   }, []);
 
-  const fetchGoals = async () => {
+  async function fetchGoals() {
     try {
       setLoading(true);
       const res = await api.get<Goal[]>('/financial-goals');
@@ -42,7 +42,7 @@ export default function FinancialGoalsPage() {
     return Math.min(100, Math.round((current / target) * 100));
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     try {
       const payload = {
